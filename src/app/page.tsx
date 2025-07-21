@@ -6,7 +6,7 @@ import { toast } from "sonner";
 import { Upload, Download, Plus, Play, Pause, RotateCcw } from "lucide-react";
 import { parseSVG, makeAbsolute } from "svg-path-parser";
 
-export function reorderPathPreservingClosureStrict(path: string, startIndex: number): string {
+function reorderPathPreservingClosureStrict(path: string, startIndex: number): string {
   let commands = makeAbsolute(parseSVG(path));
   const isClosed = commands.some((cmd) => cmd.code === "Z");
 
@@ -106,7 +106,7 @@ function normalizePath(path: string): string {
   }
 }
 
-export default function App() {
+export default function Home() {
   const [paths, setPaths] = useState<string[]>(["M 100 100 L 200 100 L 150 150 Z"]);
   const [t, setT] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
