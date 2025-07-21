@@ -27,12 +27,12 @@ export function reorderPathPreservingClosureStrict(path: string, startIndex: num
   return formatCommands(rotated, isClosed);
 }
 
-function formatCommands(commands: any[], isClosed: boolean): string {
+function formatCommands(commands: Command[], isClosed: boolean): string {
   const body = commands.map(formatCommand).join(" ");
   return isClosed ? `${body} Z` : body;
 }
 
-function formatCommand(cmd: any): string {
+function formatCommand(cmd: Command): string {
   const { code, x, y, x1, y1, x2, y2 } = cmd;
   switch (code) {
     case "M":
@@ -60,7 +60,7 @@ function getAnchorPoints(path: string): AnchorPoint[] {
         y: cmd.y!,
         index,
       }));
-  } catch (e) {
+  } catch {
     return [];
   }
 }
