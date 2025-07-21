@@ -1,9 +1,9 @@
 // src/App.tsx
 "use client";
 
-import React, { useState, useRef, useCallback, useEffect } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Zap, Play, Pause, RotateCcw, FileText } from "lucide-react";
+import { Upload, Download, Plus, Play, Pause, RotateCcw } from "lucide-react";
 import { parseSVG, makeAbsolute } from "svg-path-parser";
 
 export function reorderPathPreservingClosureStrict(path: string, startIndex: number): string {
