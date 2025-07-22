@@ -1,7 +1,7 @@
 // src/App.tsx
 "use client";
 
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Minus, Target } from "lucide-react";
 
@@ -338,6 +338,7 @@ function optimizePathCommands(commands: string[]): string[] {
 }
 
 // 베지어 곡선을 세분화하는 함수
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function subdivideCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, t: number = 0.5): { first: number[]; second: number[] } {
     // De Casteljau's algorithm
     const x01 = x0 + (x1 - x0) * t;
@@ -362,6 +363,7 @@ function subdivideCubicBezier(x0: number, y0: number, x1: number, y1: number, x2
 }
 
 // 2차 베지어 곡선을 세분화하는 함수
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function subdivideQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t: number = 0.5): { first: number[]; second: number[] } {
     const x01 = x0 + (x1 - x0) * t;
     const y01 = y0 + (y1 - y0) * t;
@@ -378,6 +380,7 @@ function subdivideQuadraticBezier(x0: number, y0: number, x1: number, y1: number
 }
 
 // 직선을 세분화하는 함수 (중간점 추가)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function subdivideLine(x0: number, y0: number, x1: number, y1: number): { midX: number; midY: number } {
     return {
         midX: (x0 + x1) / 2,
@@ -446,8 +449,10 @@ function getCurveLength(startX: number, startY: number, endX: number, endY: numb
 }
 
 // 경로에 포인트를 추가하여 지정된 수만큼 맞추는 함수 (개선된 버전)
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function normalizePathPointCount(path: string, targetPointCount: number): string {
     try {
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const commands = parseSVGPath(path);
         const currentPointCount = getAnchorPoints(path).length;
 
@@ -507,8 +512,8 @@ function removeDuplicatePoints(path: string): string {
                 case "M":
                 case "L":
                     if (numbers.length >= 2) {
-                        const x = parseFloat(numbers[0]);
-                        const y = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[0] || "0");
+                        const y = parseFloat(numbers[1] || "0");
                         targetX = isAbsolute ? x : currentX + x;
                         targetY = isAbsolute ? y : currentY + y;
 
@@ -520,7 +525,7 @@ function removeDuplicatePoints(path: string): string {
                     break;
                 case "H":
                     if (numbers.length >= 1) {
-                        const x = parseFloat(numbers[0]);
+                        const x = parseFloat(numbers[0] || "0");
                         targetX = isAbsolute ? x : currentX + x;
                         if (Math.abs(targetX - currentX) < 0.1) {
                             shouldAdd = false;
@@ -529,7 +534,7 @@ function removeDuplicatePoints(path: string): string {
                     break;
                 case "V":
                     if (numbers.length >= 1) {
-                        const y = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[0] || "0");
                         targetY = isAbsolute ? y : currentY + y;
                         if (Math.abs(targetY - currentY) < 0.1) {
                             shouldAdd = false;
@@ -539,13 +544,13 @@ function removeDuplicatePoints(path: string): string {
                 default:
                     // C, Q, S, T, Z 명령어는 항상 유지
                     if (cmdType.toUpperCase() === "C" && numbers.length >= 6) {
-                        const x = parseFloat(numbers[4]);
-                        const y = parseFloat(numbers[5]);
+                        const x = parseFloat(numbers[4] || "0");
+                        const y = parseFloat(numbers[5] || "0");
                         targetX = isAbsolute ? x : currentX + x;
                         targetY = isAbsolute ? y : currentY + y;
                     } else if (cmdType.toUpperCase() === "Q" && numbers.length >= 4) {
-                        const x = parseFloat(numbers[2]);
-                        const y = parseFloat(numbers[3]);
+                        const x = parseFloat(numbers[2] || "0");
+                        const y = parseFloat(numbers[3] || "0");
                         targetX = isAbsolute ? x : currentX + x;
                         targetY = isAbsolute ? y : currentY + y;
                     }
@@ -599,16 +604,16 @@ function addSinglePointToPath(path: string): string {
                 case "M":
                     // M 명령어는 분할하지 않음 - 경로의 시작점이므로
                     if (numbers.length >= 2) {
-                        const x = parseFloat(numbers[0]);
-                        const y = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[0] || "0");
+                        const y = parseFloat(numbers[1] || "0");
                         currentX = isAbsolute ? x : currentX + x;
                         currentY = isAbsolute ? y : currentY + y;
                     }
                     break;
                 case "L":
                     if (numbers.length >= 2) {
-                        const x = parseFloat(numbers[0]);
-                        const y = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[0] || "0");
+                        const y = parseFloat(numbers[1] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
                         const targetY = isAbsolute ? y : currentY + y;
 
@@ -635,12 +640,12 @@ function addSinglePointToPath(path: string): string {
 
                 case "C":
                     if (numbers.length >= 6) {
-                        const x1 = parseFloat(numbers[0]);
-                        const y1 = parseFloat(numbers[1]);
-                        const x2 = parseFloat(numbers[2]);
-                        const y2 = parseFloat(numbers[3]);
-                        const x = parseFloat(numbers[4]);
-                        const y = parseFloat(numbers[5]);
+                        const x1 = parseFloat(numbers[0] || "0");
+                        const y1 = parseFloat(numbers[1] || "0");
+                        const x2 = parseFloat(numbers[2] || "0");
+                        const y2 = parseFloat(numbers[3] || "0");
+                        const x = parseFloat(numbers[4] || "0");
+                        const y = parseFloat(numbers[5] || "0");
 
                         const cp1X = isAbsolute ? x1 : currentX + x1;
                         const cp1Y = isAbsolute ? y1 : currentY + y1;
@@ -669,10 +674,10 @@ function addSinglePointToPath(path: string): string {
 
                 case "Q":
                     if (numbers.length >= 4) {
-                        const x1 = parseFloat(numbers[0]);
-                        const y1 = parseFloat(numbers[1]);
-                        const x = parseFloat(numbers[2]);
-                        const y = parseFloat(numbers[3]);
+                        const x1 = parseFloat(numbers[0] || "0");
+                        const y1 = parseFloat(numbers[1] || "0");
+                        const x = parseFloat(numbers[2] || "0");
+                        const y = parseFloat(numbers[3] || "0");
 
                         const cpX = isAbsolute ? x1 : currentX + x1;
                         const cpY = isAbsolute ? y1 : currentY + y1;
@@ -699,7 +704,7 @@ function addSinglePointToPath(path: string): string {
 
                 case "H":
                     if (numbers.length >= 1) {
-                        const x = parseFloat(numbers[0]);
+                        const x = parseFloat(numbers[0] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
 
                         const distance = Math.abs(targetX - startX);
@@ -723,7 +728,7 @@ function addSinglePointToPath(path: string): string {
 
                 case "V":
                     if (numbers.length >= 1) {
-                        const y = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[0] || "0");
                         const targetY = isAbsolute ? y : currentY + y;
 
                         const distance = Math.abs(targetY - startY);
@@ -760,6 +765,7 @@ function addSinglePointToPath(path: string): string {
         // 해당 명령어를 보간된 점으로 분할
         const newCommands = [...commands];
         const originalCmd = longestSegment.command;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const cmdType = originalCmd[0];
 
         // 모든 경우에 대해 곡선 위의 중간점을 계산하여 직선으로 추가
@@ -871,8 +877,8 @@ function normalizePathPreservingCurves(path: string, targetPointCount: number): 
                 const params = cmd.substring(1).trim();
                 const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
                 if (numbers.length >= 2) {
-                    currentX = parseFloat(numbers[0]);
-                    currentY = parseFloat(numbers[1]);
+                    currentX = parseFloat(numbers[0] || "0");
+                    currentY = parseFloat(numbers[1] || "0");
                 }
             } else if (cmdType.toUpperCase() === "Z") {
                 // Z 명령어는 마지막에 추가
@@ -931,6 +937,10 @@ function analyzePathSegments(path: string): Array<{ type: string; isCurve: boole
         const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
         const isAbsolute = cmdType === cmdType.toUpperCase();
 
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const startX = currentX;
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
+        const startY = currentY;
         let length = 0;
         let isCurve = false;
         let targetX = currentX,
@@ -940,29 +950,29 @@ function analyzePathSegments(path: string): Array<{ type: string; isCurve: boole
             case "M":
                 // M 명령어는 세그먼트로 취급하지 않음
                 if (numbers.length >= 2) {
-                    currentX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
-                    currentY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+                    currentX = isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0");
+                    currentY = isAbsolute ? parseFloat(numbers[1] || "0") : currentY + parseFloat(numbers[1] || "0");
                 }
                 continue;
 
             case "L":
                 if (numbers.length >= 2) {
-                    targetX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
-                    targetY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+                    targetX = isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0");
+                    targetY = isAbsolute ? parseFloat(numbers[1] || "0") : currentY + parseFloat(numbers[1] || "0");
                     length = Math.sqrt((targetX - currentX) ** 2 + (targetY - currentY) ** 2);
                 }
                 break;
 
             case "H":
                 if (numbers.length >= 1) {
-                    targetX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+                    targetX = isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0");
                     length = Math.abs(targetX - currentX);
                 }
                 break;
 
             case "V":
                 if (numbers.length >= 1) {
-                    targetY = isAbsolute ? parseFloat(numbers[0]) : currentY + parseFloat(numbers[0]);
+                    targetY = isAbsolute ? parseFloat(numbers[0] || "0") : currentY + parseFloat(numbers[0] || "0");
                     length = Math.abs(targetY - currentY);
                 }
                 break;
@@ -970,12 +980,12 @@ function analyzePathSegments(path: string): Array<{ type: string; isCurve: boole
             case "C":
                 isCurve = true;
                 if (numbers.length >= 6) {
-                    targetX = isAbsolute ? parseFloat(numbers[4]) : currentX + parseFloat(numbers[4]);
-                    targetY = isAbsolute ? parseFloat(numbers[5]) : currentY + parseFloat(numbers[5]);
-                    const cp1X = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
-                    const cp1Y = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
-                    const cp2X = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
-                    const cp2Y = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
+                    targetX = isAbsolute ? parseFloat(numbers[4] || "0") : currentX + parseFloat(numbers[4] || "0");
+                    targetY = isAbsolute ? parseFloat(numbers[5] || "0") : currentY + parseFloat(numbers[5] || "0");
+                    const cp1X = isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0");
+                    const cp1Y = isAbsolute ? parseFloat(numbers[1] || "0") : currentY + parseFloat(numbers[1] || "0");
+                    const cp2X = isAbsolute ? parseFloat(numbers[2] || "0") : currentX + parseFloat(numbers[2] || "0");
+                    const cp2Y = isAbsolute ? parseFloat(numbers[3] || "0") : currentY + parseFloat(numbers[3] || "0");
                     length = getCurveLength(currentX, currentY, targetX, targetY, "cubic", [cp1X, cp1Y, cp2X, cp2Y]);
                 }
                 break;
@@ -983,10 +993,10 @@ function analyzePathSegments(path: string): Array<{ type: string; isCurve: boole
             case "Q":
                 isCurve = true;
                 if (numbers.length >= 4) {
-                    targetX = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
-                    targetY = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
-                    const cpX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
-                    const cpY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+                    targetX = isAbsolute ? parseFloat(numbers[2] || "0") : currentX + parseFloat(numbers[2] || "0");
+                    targetY = isAbsolute ? parseFloat(numbers[3] || "0") : currentY + parseFloat(numbers[3] || "0");
+                    const cpX = isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0");
+                    const cpY = isAbsolute ? parseFloat(numbers[1] || "0") : currentY + parseFloat(numbers[1] || "0");
                     length = getCurveLength(currentX, currentY, targetX, targetY, "quadratic", [cpX, cpY]);
                 }
                 break;
@@ -1024,15 +1034,15 @@ function getCommandEndPoint(cmd: string, currentX: number, currentY: number): { 
         case "M":
             if (numbers.length >= 2) {
                 return {
-                    x: isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]),
-                    y: isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]),
+                    x: isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0"),
+                    y: isAbsolute ? parseFloat(numbers[1] || "0") : currentY + parseFloat(numbers[1] || "0"),
                 };
             }
             break;
         case "H":
             if (numbers.length >= 1) {
                 return {
-                    x: isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]),
+                    x: isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0"),
                     y: currentY,
                 };
             }
@@ -1041,23 +1051,23 @@ function getCommandEndPoint(cmd: string, currentX: number, currentY: number): { 
             if (numbers.length >= 1) {
                 return {
                     x: currentX,
-                    y: isAbsolute ? parseFloat(numbers[0]) : currentY + parseFloat(numbers[0]),
+                    y: isAbsolute ? parseFloat(numbers[0] || "0") : currentY + parseFloat(numbers[0] || "0"),
                 };
             }
             break;
         case "C":
             if (numbers.length >= 6) {
                 return {
-                    x: isAbsolute ? parseFloat(numbers[4]) : currentX + parseFloat(numbers[4]),
-                    y: isAbsolute ? parseFloat(numbers[5]) : currentY + parseFloat(numbers[5]),
+                    x: isAbsolute ? parseFloat(numbers[4] || "0") : currentX + parseFloat(numbers[4] || "0"),
+                    y: isAbsolute ? parseFloat(numbers[5] || "0") : currentY + parseFloat(numbers[5] || "0"),
                 };
             }
             break;
         case "Q":
             if (numbers.length >= 4) {
                 return {
-                    x: isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]),
-                    y: isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]),
+                    x: isAbsolute ? parseFloat(numbers[2] || "0") : currentX + parseFloat(numbers[2] || "0"),
+                    y: isAbsolute ? parseFloat(numbers[3] || "0") : currentY + parseFloat(numbers[3] || "0"),
                 };
             }
             break;
@@ -1075,12 +1085,12 @@ function subdivideCommand(cmd: string, currentX: number, currentY: number, subdi
 
     if (cmdType.toUpperCase() === "C" && numbers.length >= 6) {
         // 3차 베지어 곡선 세분화
-        const cp1X = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
-        const cp1Y = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
-        const cp2X = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
-        const cp2Y = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
-        const endX = isAbsolute ? parseFloat(numbers[4]) : currentX + parseFloat(numbers[4]);
-        const endY = isAbsolute ? parseFloat(numbers[5]) : currentY + parseFloat(numbers[5]);
+        const cp1X = isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0");
+        const cp1Y = isAbsolute ? parseFloat(numbers[1] || "0") : currentY + parseFloat(numbers[1] || "0");
+        const cp2X = isAbsolute ? parseFloat(numbers[2] || "0") : currentX + parseFloat(numbers[2] || "0");
+        const cp2Y = isAbsolute ? parseFloat(numbers[3] || "0") : currentY + parseFloat(numbers[3] || "0");
+        const endX = isAbsolute ? parseFloat(numbers[4] || "0") : currentX + parseFloat(numbers[4] || "0");
+        const endY = isAbsolute ? parseFloat(numbers[5] || "0") : currentY + parseFloat(numbers[5] || "0");
 
         const parts: string[] = [];
         const segments = subdivisions + 1;
@@ -1096,10 +1106,10 @@ function subdivideCommand(cmd: string, currentX: number, currentY: number, subdi
         return parts;
     } else if (cmdType.toUpperCase() === "Q" && numbers.length >= 4) {
         // 2차 베지어 곡선 세분화
-        const cpX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
-        const cpY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
-        const endX = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
-        const endY = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
+        const cpX = isAbsolute ? parseFloat(numbers[0] || "0") : currentX + parseFloat(numbers[0] || "0");
+        const cpY = isAbsolute ? parseFloat(numbers[1] || "0") : currentY + parseFloat(numbers[1] || "0");
+        const endX = isAbsolute ? parseFloat(numbers[2] || "0") : currentX + parseFloat(numbers[2] || "0");
+        const endY = isAbsolute ? parseFloat(numbers[3] || "0") : currentY + parseFloat(numbers[3] || "0");
 
         const parts: string[] = [];
         const segments = subdivisions + 1;
@@ -1169,6 +1179,7 @@ function subdivideQuadraticBezierRange(x0: number, y0: number, x1: number, y1: n
 }
 
 // 경로의 전체 길이를 계산하는 함수
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function calculateTotalPathLength(path: string): number {
     try {
         const commands = parseSVGPath(path);
@@ -1182,15 +1193,13 @@ function calculateTotalPathLength(path: string): number {
             const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
             const isAbsolute = cmdType === cmdType.toUpperCase();
 
-            const startX = currentX;
-            const startY = currentY;
 
             switch (cmdType.toUpperCase()) {
                 case "M":
                 case "L":
                     if (numbers.length >= 2) {
-                        const x = parseFloat(numbers[0]);
-                        const y = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[0] || "0");
+                        const y = parseFloat(numbers[1] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
                         const targetY = isAbsolute ? y : currentY + y;
 
@@ -1206,7 +1215,7 @@ function calculateTotalPathLength(path: string): number {
 
                 case "H":
                     if (numbers.length >= 1) {
-                        const x = parseFloat(numbers[0]);
+                        const x = parseFloat(numbers[0] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
                         totalLength += Math.abs(targetX - currentX);
                         currentX = targetX;
@@ -1215,7 +1224,7 @@ function calculateTotalPathLength(path: string): number {
 
                 case "V":
                     if (numbers.length >= 1) {
-                        const y = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[0] || "0");
                         const targetY = isAbsolute ? y : currentY + y;
                         totalLength += Math.abs(targetY - currentY);
                         currentY = targetY;
@@ -1224,12 +1233,12 @@ function calculateTotalPathLength(path: string): number {
 
                 case "C":
                     if (numbers.length >= 6) {
-                        const x1 = parseFloat(numbers[0]);
-                        const y1 = parseFloat(numbers[1]);
-                        const x2 = parseFloat(numbers[2]);
-                        const y2 = parseFloat(numbers[3]);
-                        const x = parseFloat(numbers[4]);
-                        const y = parseFloat(numbers[5]);
+                        const x1 = parseFloat(numbers[0] || "0");
+                        const y1 = parseFloat(numbers[1] || "0");
+                        const x2 = parseFloat(numbers[2] || "0");
+                        const y2 = parseFloat(numbers[3] || "0");
+                        const x = parseFloat(numbers[4] || "0");
+                        const y = parseFloat(numbers[5] || "0");
 
                         const cp1X = isAbsolute ? x1 : currentX + x1;
                         const cp1Y = isAbsolute ? y1 : currentY + y1;
@@ -1247,10 +1256,10 @@ function calculateTotalPathLength(path: string): number {
 
                 case "Q":
                     if (numbers.length >= 4) {
-                        const x1 = parseFloat(numbers[0]);
-                        const y1 = parseFloat(numbers[1]);
-                        const x = parseFloat(numbers[2]);
-                        const y = parseFloat(numbers[3]);
+                        const x1 = parseFloat(numbers[0] || "0");
+                        const y1 = parseFloat(numbers[1] || "0");
+                        const x = parseFloat(numbers[2] || "0");
+                        const y = parseFloat(numbers[3] || "0");
 
                         const cpX = isAbsolute ? x1 : currentX + x1;
                         const cpY = isAbsolute ? y1 : currentY + y1;
@@ -1274,6 +1283,7 @@ function calculateTotalPathLength(path: string): number {
 }
 
 // 경로 상에서 특정 거리에 있는 점을 찾는 함수
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getPointAtDistance(path: string, targetDistance: number): { x: number; y: number } | null {
     try {
         const commands = parseSVGPath(path);
@@ -1288,7 +1298,7 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
                 const params = firstCmd.substring(1).trim();
                 const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
                 if (numbers.length >= 2) {
-                    return { x: parseFloat(numbers[0]), y: parseFloat(numbers[1]) };
+                    return { x: parseFloat(numbers[0] || "0"), y: parseFloat(numbers[1] || "0") };
                 }
             }
             return { x: 0, y: 0 };
@@ -1300,14 +1310,12 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
             const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
             const isAbsolute = cmdType === cmdType.toUpperCase();
 
-            const startX = currentX;
-            const startY = currentY;
 
             switch (cmdType.toUpperCase()) {
                 case "M":
                     if (numbers.length >= 2) {
-                        const x = parseFloat(numbers[0]);
-                        const y = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[0] || "0");
+                        const y = parseFloat(numbers[1] || "0");
                         currentX = isAbsolute ? x : currentX + x;
                         currentY = isAbsolute ? y : currentY + y;
                     }
@@ -1315,8 +1323,8 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
 
                 case "L":
                     if (numbers.length >= 2) {
-                        const x = parseFloat(numbers[0]);
-                        const y = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[0] || "0");
+                        const y = parseFloat(numbers[1] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
                         const targetY = isAbsolute ? y : currentY + y;
 
@@ -1339,7 +1347,7 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
 
                 case "H":
                     if (numbers.length >= 1) {
-                        const x = parseFloat(numbers[0]);
+                        const x = parseFloat(numbers[0] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
                         const segmentLength = Math.abs(targetX - currentX);
 
@@ -1358,7 +1366,7 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
 
                 case "V":
                     if (numbers.length >= 1) {
-                        const y = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[0] || "0");
                         const targetY = isAbsolute ? y : currentY + y;
                         const segmentLength = Math.abs(targetY - currentY);
 
@@ -1378,8 +1386,8 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
                 // C, Q 곡선의 경우 단순화하여 직선으로 근사
                 case "C":
                     if (numbers.length >= 6) {
-                        const x = parseFloat(numbers[4]);
-                        const y = parseFloat(numbers[5]);
+                        const x = parseFloat(numbers[4] || "0");
+                        const y = parseFloat(numbers[5] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
                         const targetY = isAbsolute ? y : currentY + y;
 
@@ -1402,8 +1410,8 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
 
                 case "Q":
                     if (numbers.length >= 4) {
-                        const x = parseFloat(numbers[2]);
-                        const y = parseFloat(numbers[3]);
+                        const x = parseFloat(numbers[2] || "0");
+                        const y = parseFloat(numbers[3] || "0");
                         const targetX = isAbsolute ? x : currentX + x;
                         const targetY = isAbsolute ? y : currentY + y;
 
@@ -1685,24 +1693,24 @@ export default function Home() {
     };
 
     // 되돌리기
-    const undo = () => {
+    const undo = useCallback(() => {
         if (historyIndex > 0) {
             const newIndex = historyIndex - 1;
             setHistoryIndex(newIndex);
             setPaths([...pathHistory[newIndex]]);
             setIsNormalized(false); // undo시 정규화 상태 해제
         }
-    };
+    }, [historyIndex, pathHistory]);
 
     // 다시 실행
-    const redo = () => {
+    const redo = useCallback(() => {
         if (historyIndex < pathHistory.length - 1) {
             const newIndex = historyIndex + 1;
             setHistoryIndex(newIndex);
             setPaths([...pathHistory[newIndex]]);
             setIsNormalized(false); // redo시 정규화 상태 해제
         }
-    };
+    }, [historyIndex, pathHistory]);
 
     // Ctrl+Z 단축키 처리
     useEffect(() => {
@@ -1719,7 +1727,7 @@ export default function Home() {
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [historyIndex, pathHistory]);
+    }, [historyIndex, pathHistory, redo, undo]);
 
     const updatePath = (index: number, value: string) => {
         const newPaths = [...paths];
