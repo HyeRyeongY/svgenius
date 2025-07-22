@@ -5,10 +5,10 @@ import { Toaster } from "sonner";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "SVGenius - Smart SVG Path Manipulation Tool",
+    title: "SVGenius",
     description: "Transform your SVG paths with intelligence. Advanced path morphing, real-time preview, and powerful tools for SVG manipulation.",
     keywords: ["SVG", "path manipulation", "morphing", "animation", "design tools", "vector graphics"],
-    authors: [{ name: "SVGenius Team" }],
+    authors: [{ name: "yoonhr" }],
     creator: "SVGenius",
     publisher: "SVGenius",
     formatDetection: {
@@ -21,7 +21,7 @@ export const metadata: Metadata = {
         canonical: "/",
     },
     openGraph: {
-        title: "SVGenius - Smart SVG Path Manipulation Tool",
+        title: "SVGenius",
         description: "Transform your SVG paths with intelligence. Advanced path morphing, real-time preview, and powerful tools for SVG manipulation.",
         url: "https://svgenius.gnyng.com",
         siteName: "SVGenius",
@@ -30,7 +30,7 @@ export const metadata: Metadata = {
                 url: "/og.jpg",
                 width: 1200,
                 height: 630,
-                alt: "SVGenius - Smart SVG Path Manipulation Tool",
+                alt: "SVGenius ",
             },
         ],
         locale: "en_US",
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     },
     twitter: {
         card: "summary_large_image",
-        title: "SVGenius - Smart SVG Path Manipulation Tool",
+        title: "SVGenius",
         description: "Transform your SVG paths with intelligence. Advanced path morphing, real-time preview, and powerful tools for SVG manipulation.",
         images: ["/og.jpg"],
         creator: "@svgenius",
