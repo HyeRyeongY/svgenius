@@ -1,13 +1,11 @@
-
 @font-face {
-  font-family: 'Pretendard-Regular';
-  src: url('https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff') format('woff');
+  font-family: "Pretendard-Regular";
+  src: url("https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff") format("woff");
   font-weight: 400;
   font-style: normal;
 }
-
 body {
-  font-family: 'Pretendard-Regular', sans-serif;
+  font-family: "Pretendard-Regular", sans-serif;
   background-color: #000;
   color: #fff;
 }
@@ -16,24 +14,24 @@ body {
 .header {
   text-align: center;
   margin-bottom: 2rem;
-  .logo-area {
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    gap: 1rem;
-    img {
-      width: 4rem;
-    }
-  }
-  .title {
-    font-size: 2rem;
-    font-weight: bold;
-  }
-  p.subtitle {
-    font-size: 1.4rem;
-    margin-top: 1rem;
-    color: #a0a0a0;
-  }
+}
+.header .logo-area {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+}
+.header .logo-area img {
+  width: 4rem;
+}
+.header .title {
+  font-size: 2rem;
+  font-weight: bold;
+}
+.header p.subtitle {
+  font-size: 1.4rem;
+  margin-top: 1rem;
+  color: #a0a0a0;
 }
 
 .app-wrapper {
@@ -47,10 +45,12 @@ body {
   gap: 2rem;
   flex-wrap: wrap;
 }
+
 .panel {
   flex: 1;
   min-width: 300px;
 }
+
 .section {
   margin-bottom: 2rem;
   border: 1px solid #333;
@@ -60,6 +60,7 @@ body {
   flex-direction: column;
   width: 100%;
 }
+
 .section-title {
   font-size: 1.6rem;
   display: flex;
@@ -67,7 +68,7 @@ body {
   gap: 1rem;
 }
 
-.section-header{
+.section-header {
   display: flex;
   justify-content: space-between;
   margin-bottom: 1rem;
@@ -83,35 +84,38 @@ body {
   padding: 4px 8px;
   border-radius: 4px;
   font-weight: 400;
-  &.outline {
-    background: transparent;
-    border: 1px solid #666;
-  }
+}
+.chip.outline {
+  background: transparent;
+  border: 1px solid #666;
 }
 
 .button-row, .button-wrap, .chip-wrap {
   display: flex;
   gap: 1rem;
-  button {
-    width: auto;
-  }
 }
-.button-row{
+.button-row button, .button-wrap button, .chip-wrap button {
+  width: auto;
+}
+
+.button-row {
   width: 100%;
-  button {
-    width: 100%;
-  }
 }
-.button-column{
+.button-row button {
+  width: 100%;
+}
+
+.button-column {
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  button{
-    width: 100%;
-    text-align: center;
-    padding: 0;
-  }
 }
+.button-column button {
+  width: 100%;
+  text-align: center;
+  padding: 0;
+}
+
 .btn {
   width: 100%;
   height: 3.6rem;
@@ -125,38 +129,48 @@ body {
   cursor: pointer;
   background: #000;
 }
-.btn-wrap{
-  display: flex; gap: 2rem;
+
+.btn-wrap {
+  display: flex;
+  gap: 2rem;
 }
+
 .btn.primary {
   background: #fff;
   color: #000;
 }
+
 .btn.secondary {
   background: #222;
   border-color: #222;
   color: #fff;
 }
+
 .btn.danger {
   color: #FF4D47;
   border: none;
 }
+
 .btn.active {
   color: #FFBB00;
   border: none;
 }
+
 .btn.text {
   color: #888;
   border: none;
 }
+
 .btn.full {
   width: auto;
 }
+
 .btn.small {
   display: inline-block;
   padding: 0 1rem;
   width: auto;
 }
+
 .btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -181,76 +195,73 @@ body {
 }
 
 /* import */
-.import-section{
-  .section-title{
-    margin-bottom: 1rem;
-  }
+.import-section .section-title {
+  margin-bottom: 1rem;
 }
 
 /* path editor */
-.path-group{
+.path-group {
   margin-bottom: 1rem;
-  .path-header{
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    .chip {
-      margin-left: 1rem;
-    }
-  }
-  .path-wrap {
-    display: flex;
-    align-items: stretch;
-    height: 100%;
-    gap: 1rem;
-    .btn {
-      width: 80px;
-      flex-shrink: 0;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      gap: 1rem;
-      height: 120px;
-    }
-  }
-  .preview-btn{
-    width: 80px;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-  }
+}
+.path-group .path-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.path-group .path-header .chip {
+  margin-left: 1rem;
+}
+.path-group .path-wrap {
+  display: flex;
+  align-items: stretch;
+  height: 100%;
+  gap: 1rem;
+}
+.path-group .path-wrap .btn {
+  width: 80px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 1rem;
+  height: 120px;
+}
+.path-group .preview-btn {
+  width: 80px;
+  display: flex;
+  justify-content: center;
+  align-items: center;
 }
 
 /* animation */
 .control-group {
   margin-bottom: 2rem;
-
-  .label {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin: 1rem 0;
-    span{
-      display: inline-block;
-      color: #b4b4b4;
-      border: 1px solid #666;
-      padding: 4px 8px;
-      border-radius: 4px;
-      font-weight: 400;
-      font-size: 1.2rem;
-    }
-  }
-  > span{
-    display: inline-block;
-    color: #b4b4b4;
-    font-size: 1.4rem;
-    margin-top: 1rem;
-  }
+}
+.control-group .label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 1rem 0;
+}
+.control-group .label span {
+  display: inline-block;
+  color: #b4b4b4;
+  border: 1px solid #666;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-weight: 400;
+  font-size: 1.2rem;
+}
+.control-group > span {
+  display: inline-block;
+  color: #b4b4b4;
+  font-size: 1.4rem;
+  margin-top: 1rem;
 }
 
-input[type="range"] {
+input[type=range] {
   -webkit-appearance: none;
   width: 100%;
   height: 12px;
@@ -261,7 +272,7 @@ input[type="range"] {
 }
 
 /* WebKit (Chrome, Safari) Thumb */
-input[type="range"]::-webkit-slider-thumb {
+input[type=range]::-webkit-slider-thumb {
   -webkit-appearance: none;
   appearance: none;
   width: 14px;
@@ -273,16 +284,13 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* preview */
-.preview-section{
-  .button-row{
-    margin-top: 1rem;
-  }
-  .preview {
-    background: #333;
-    border-radius: 0.5rem;
-    padding: 1rem;
-    aspect-ratio: 1 / 1;
-    margin-bottom: 1rem;
-  }
+.preview-section .button-row {
+  margin-top: 1rem;
 }
-
+.preview-section .preview {
+  background: #333;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  aspect-ratio: 1/1;
+  margin-bottom: 1rem;
+}
