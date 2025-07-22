@@ -1,36 +1,189 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# SVGenius
 
-## Getting Started
+**Smart morphing. Genius level SVG path manipulation.**
 
-First, run the development server:
+SVGenius는 SVG 경로를 직관적으로 편집하고 시작점을 재정의할 수 있는 고급 SVG 편집 도구입니다. 
+
+## 💡 개발 배경
+
+SVG 모핑(morphing) 애니메이션을 구현할 때 가장 중요한 것은 **시작점의 일치**와 **포인트 수의 동일성**입니다. 서로 다른 SVG 경로 간에 자연스러운 변환 애니메이션을 만들려면:
+
+- ✅ **시작점이 같은 위치**에서 시작해야 함
+- ✅ **포인트 개수가 동일**해야 매끄러운 보간 가능
+- ✅ **형태는 그대로** 유지되어야 함
+
+기존 도구들로는 이런 조건을 맞추기 위해 복잡한 수작업이 필요했습니다. SVGenius는 이 문제를 해결하기 위해 개발되었으며, 복잡한 SVG 경로의 시작점을 변경하면서도 원래 형태와 곡선을 완벽하게 보존하는 혁신적인 기능을 제공합니다.
+
+## 🎯 주요 기능
+
+### 1. SVG 가져오기 & 내보내기
+- **SVG 파일 가져오기**: 기존 SVG 파일을 업로드하여 경로 자동 추출
+- **개별 경로 내보내기**: 각 경로를 별도의 SVG 파일로 다운로드
+- **실시간 미리보기**: 편집 중인 경로를 즉시 확인
+
+### 2. 고급 경로 편집
+- **다중 경로 지원**: 여러 개의 SVG 경로를 동시에 관리
+- **실시간 편집**: 텍스트 에디터에서 경로를 직접 수정
+- **자동 검증**: 잘못된 경로 형식 자동 감지
+
+### 3. 시작점 재정의 (핵심 기능)
+- **시각적 앵커 포인트**: SVG 경로 위의 모든 점을 시각적으로 표시
+- **클릭으로 선택**: 원하는 점을 클릭하여 새로운 시작점으로 설정
+- **형태 완벽 보존**: 시작점을 변경해도 원래 형태와 곡선이 100% 유지
+- **지능형 최적화**: 불필요한 명령어 자동 제거로 효율적인 경로 생성
+
+### 4. 직관적인 UI/UX
+- **미리보기 토글**: 재생/정지 버튼으로 각 경로의 미리보기 on/off
+- **실시간 정보**: 경로별 포인트 수, 문자 수 실시간 표시
+- **되돌리기/다시실행**: Ctrl+Z, Ctrl+Shift+Z 지원으로 안전한 편집
+
+### 5. 애니메이션 컨트롤
+- **모핑 애니메이션**: 경로 간 부드러운 전환 효과
+- **속도 조절**: 0.5x ~ 5.0x 범위의 애니메이션 속도 제어
+- **진행률 표시**: 실시간 애니메이션 진행 상황 확인
+
+## 🚀 사용법
+
+### 기본 사용 흐름
+
+1. **SVG 가져오기**
+   - "SVG 파일 선택" 버튼 클릭
+   - 원하는 SVG 파일 업로드
+   - 자동으로 경로들이 추출되어 편집기에 표시
+
+2. **경로 선택 및 미리보기**
+   - 편집하고 싶은 경로의 "미리보기" 버튼 클릭 (▶️)
+   - 우측 미리보기 패널에서 경로와 앵커 포인트들 확인
+
+3. **시작점 변경**
+   - 미리보기에서 원하는 앵커 포인트 클릭
+   - "시작점 설정" 버튼 (🎯) 클릭
+   - 경로가 새로운 시작점으로 재정렬되면서 형태는 그대로 유지
+
+4. **결과 확인 및 내보내기**
+   - 재정렬된 경로 확인
+   - "내보내기" 버튼으로 SVG 파일 다운로드
+
+### 고급 기능
+
+#### 다중 경로 관리
+- **새 경로 추가**: "새 경로 추가" 버튼으로 빈 경로 생성
+- **경로 삭제**: 각 경로의 삭제 버튼 (➖)으로 불필요한 경로 제거
+- **개별 편집**: 각 경로를 독립적으로 편집 및 관리
+
+#### 실시간 정보 확인
+- **포인트 수**: 각 경로의 앵커 포인트 개수 표시
+- **문자 수**: 경로 데이터의 길이 정보
+- **실시간 업데이트**: 편집 시 즉시 정보 갱신
+
+#### 애니메이션 효과
+- **재생**: 경로 간 부드러운 모핑 애니메이션
+- **속도 조절**: 슬라이더로 애니메이션 속도 제어
+- **리셋**: 애니메이션 처음부터 다시 시작
+
+## 🎨 기술적 특징
+
+### 지능형 경로 재정렬
+- **곡선 보존**: 베지어 곡선, 2차 곡선 등 모든 곡선 타입 완벽 보존
+- **포인트 수 최적화**: 불필요한 중복 명령어 자동 제거
+- **상대/절대 좌표 처리**: 다양한 SVG 명령어 형식 지원
+
+### SVG 명령어 지원
+- **M (Move)**: 이동 명령어
+- **L (Line)**: 직선 그리기
+- **H (Horizontal)**: 수평선
+- **V (Vertical)**: 수직선  
+- **C (Cubic Bézier)**: 3차 베지어 곡선
+- **Q (Quadratic Bézier)**: 2차 베지어 곡선
+- **S (Smooth Cubic)**: 부드러운 3차 곡선
+- **T (Smooth Quadratic)**: 부드러운 2차 곡선
+- **Z (ClosePath)**: 경로 닫기
+
+### 최적화 알고리즘
+- **중복 제거**: 같은 위치로의 불필요한 이동 제거
+- **형태 보존**: 시작점 변경 시에도 원래 모양 완벽 유지
+- **효율성**: 최소한의 명령어로 같은 결과 달성
+
+## 🛠 기술 스택
+
+- **Framework**: Next.js 14 (App Router)
+- **Language**: TypeScript
+- **UI**: React 18 + Lucide Icons
+- **Styling**: SCSS Modules
+- **Notifications**: Sonner (Toast)
+- **SVG Processing**: 커스텀 파서 및 최적화 엔진
+
+## 💡 사용 사례
+
+### SVG 모핑 애니메이션 최적화
+- **자연스러운 변환**: 시작점을 통일하여 매끄러운 모핑 애니메이션 구현
+- **포인트 수 조정**: 서로 다른 경로 간 포인트 개수 동일화
+- **웹 애니메이션**: CSS 애니메이션이나 JavaScript 라이브러리와 완벽 호환
+
+### 디자인 워크플로우 개선
+- **아이콘 세트 정규화**: 일관된 시작점으로 아이콘 패밀리 통일
+- **드로잉 순서 최적화**: 복잡한 SVG 아이콘의 그리기 순서 조정
+- **애니메이션 준비**: 디자인 단계에서 애니메이션을 고려한 경로 최적화
+
+### 개발 효율성 향상
+- **SVG 파일 크기 최소화**: 불필요한 명령어 제거로 파일 사이즈 축소
+- **렌더링 성능 향상**: 최적화된 경로로 브라우저 렌더링 속도 개선
+- **개발 시간 단축**: 수작업 없이 빠른 경로 최적화
+
+## 🔧 키보드 단축키
+
+- `Ctrl + Z`: 되돌리기
+- `Ctrl + Shift + Z`: 다시실행
+- `Ctrl + Y`: 다시실행 (대체)
+
+## 🚀 개발 환경 설정
+
+### 시작하기
 
 ```bash
+# 의존성 설치
+npm install
+
+# 개발 서버 실행
 npm run dev
-# or
+# 또는
 yarn dev
-# or
+# 또는
 pnpm dev
-# or
+# 또는
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 [http://localhost:3000](http://localhost:3000)을 열어 결과를 확인하세요.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### 프로젝트 구조
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```
+svgenius/
+├── src/
+│   ├── app/
+│   │   ├── layout.tsx      # 메인 레이아웃
+│   │   └── page.tsx        # 메인 페이지 (SVGenius 컴포넌트)
+│   └── styles/
+│       └── global.scss     # 전역 스타일
+├── public/
+│   ├── SVGenius.svg        # 로고
+│   └── ...
+└── types/
+    └── svg-path-parser.d.ts # 타입 정의
+```
 
-## Learn More
+## 📈 버전 정보
 
-To learn more about Next.js, take a look at the following resources:
+**현재 버전: v1.0.0**
+- 기본 SVG 경로 편집 기능
+- 시작점 재정의 기능
+- 곡선 보존 알고리즘
+- 실시간 미리보기
+- 애니메이션 컨트롤
+- 다중 경로 지원
+- 한국어 UI 지원
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+**SVGenius** - SVG 경로 편집의 새로운 기준을 제시합니다.
