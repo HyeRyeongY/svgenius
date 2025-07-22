@@ -109,6 +109,13 @@ body {
   background: transparent;
   border: 1px solid #666;
 }
+.chip.success {
+  background: #22c55e;
+  color: #fff;
+}
+.chip.normalized {
+  color: #FFBB00;
+}
 
 .button-row, .button-wrap, .chip-wrap {
   display: flex;

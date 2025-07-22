@@ -107,6 +107,13 @@ body {
     background: transparent;
     border: 1px solid #666;
   }
+  &.success {
+    background: #22c55e;
+    color: #fff;
+  }
+  &.normalized {
+    color: #FFBB00;
+  }
 }
 
 .button-row, .button-wrap, .chip-wrap {

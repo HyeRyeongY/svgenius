@@ -337,6 +337,1119 @@ function optimizePathCommands(commands: string[]): string[] {
     return optimized;
 }
 
+// 베지어 곡선을 세분화하는 함수
+function subdivideCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, t: number = 0.5): { first: number[]; second: number[] } {
+    // De Casteljau's algorithm
+    const x01 = x0 + (x1 - x0) * t;
+    const y01 = y0 + (y1 - y0) * t;
+    const x12 = x1 + (x2 - x1) * t;
+    const y12 = y1 + (y2 - y1) * t;
+    const x23 = x2 + (x3 - x2) * t;
+    const y23 = y2 + (y3 - y2) * t;
+
+    const x012 = x01 + (x12 - x01) * t;
+    const y012 = y01 + (y12 - y01) * t;
+    const x123 = x12 + (x23 - x12) * t;
+    const y123 = y12 + (y23 - y12) * t;
+
+    const x0123 = x012 + (x123 - x012) * t;
+    const y0123 = y012 + (y123 - y012) * t;
+
+    return {
+        first: [x0, y0, x01, y01, x012, y012, x0123, y0123],
+        second: [x0123, y0123, x123, y123, x23, y23, x3, y3],
+    };
+}
+
+// 2차 베지어 곡선을 세분화하는 함수
+function subdivideQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t: number = 0.5): { first: number[]; second: number[] } {
+    const x01 = x0 + (x1 - x0) * t;
+    const y01 = y0 + (y1 - y0) * t;
+    const x12 = x1 + (x2 - x1) * t;
+    const y12 = y1 + (y2 - y1) * t;
+
+    const x012 = x01 + (x12 - x01) * t;
+    const y012 = y01 + (y12 - y01) * t;
+
+    return {
+        first: [x0, y0, x01, y01, x012, y012],
+        second: [x012, y012, x12, y12, x2, y2],
+    };
+}
+
+// 직선을 세분화하는 함수 (중간점 추가)
+function subdivideLine(x0: number, y0: number, x1: number, y1: number): { midX: number; midY: number } {
+    return {
+        midX: (x0 + x1) / 2,
+        midY: (y0 + y1) / 2,
+    };
+}
+
+// 베지어 곡선 상의 점을 계산하는 함수 (t는 0~1 사이 값)
+function getPointOnCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, t: number): { x: number; y: number } {
+    const u = 1 - t;
+    const tt = t * t;
+    const uu = u * u;
+    const uuu = uu * u;
+    const ttt = tt * t;
+
+    const x = uuu * x0 + 3 * uu * t * x1 + 3 * u * tt * x2 + ttt * x3;
+    const y = uuu * y0 + 3 * uu * t * y1 + 3 * u * tt * y2 + ttt * y3;
+
+    return { x, y };
+}
+
+// 2차 베지어 곡선 상의 점을 계산하는 함수
+function getPointOnQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t: number): { x: number; y: number } {
+    const u = 1 - t;
+    const x = u * u * x0 + 2 * u * t * x1 + t * t * x2;
+    const y = u * u * y0 + 2 * u * t * y1 + t * t * y2;
+
+    return { x, y };
+}
+
+// 곡선의 실제 길이를 근사적으로 계산하는 함수
+function getCurveLength(startX: number, startY: number, endX: number, endY: number, curveType: string, controlPoints: number[]): number {
+    if (curveType === "line") {
+        return Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
+    }
+
+    // 곡선의 경우 여러 점을 샘플링하여 길이 근사
+    let length = 0;
+    const samples = 20;
+    let prevX = startX,
+        prevY = startY;
+
+    for (let i = 1; i <= samples; i++) {
+        const t = i / samples;
+        let currentX, currentY;
+
+        if (curveType === "cubic") {
+            const point = getPointOnCubicBezier(startX, startY, controlPoints[0], controlPoints[1], controlPoints[2], controlPoints[3], endX, endY, t);
+            currentX = point.x;
+            currentY = point.y;
+        } else if (curveType === "quadratic") {
+            const point = getPointOnQuadraticBezier(startX, startY, controlPoints[0], controlPoints[1], endX, endY, t);
+            currentX = point.x;
+            currentY = point.y;
+        } else {
+            currentX = startX + (endX - startX) * t;
+            currentY = startY + (endY - startY) * t;
+        }
+
+        length += Math.sqrt((currentX - prevX) ** 2 + (currentY - prevY) ** 2);
+        prevX = currentX;
+        prevY = currentY;
+    }
+
+    return length;
+}
+
+// 경로에 포인트를 추가하여 지정된 수만큼 맞추는 함수 (개선된 버전)
+function normalizePathPointCount(path: string, targetPointCount: number): string {
+    try {
+        const commands = parseSVGPath(path);
+        const currentPointCount = getAnchorPoints(path).length;
+
+        console.log(`Normalizing path: current=${currentPointCount}, target=${targetPointCount}`);
+
+        if (currentPointCount >= targetPointCount) {
+            console.log("Already has enough points, returning original");
+            return path; // 이미 충분한 포인트가 있으면 그대로 반환
+        }
+
+        const pointsToAdd = targetPointCount - currentPointCount;
+        console.log(`Need to add ${pointsToAdd} points`);
+
+        // 가장 간단한 방법: 기존 선분들 사이에 중간점을 추가
+        let result = path;
+        let currentPoints = currentPointCount;
+
+        for (let i = 0; i < pointsToAdd; i++) {
+            result = addSinglePointToPath(result);
+            const newPoints = getAnchorPoints(result).length;
+            console.log(`Round ${i + 1}: ${currentPoints} -> ${newPoints} points`);
+            currentPoints = newPoints;
+
+            if (currentPoints >= targetPointCount) {
+                break;
+            }
+        }
+
+        console.log(`Final normalization: ${currentPointCount} -> ${getAnchorPoints(result).length} points`);
+        return result;
+    } catch (error) {
+        console.warn("Path normalization failed:", error);
+        return path;
+    }
+}
+
+// 경로에서 중복 포인트 제거하는 함수
+function removeDuplicatePoints(path: string): string {
+    try {
+        const commands = parseSVGPath(path);
+        const cleanCommands: string[] = [];
+        let currentX = 0,
+            currentY = 0;
+
+        for (let i = 0; i < commands.length; i++) {
+            const cmd = commands[i];
+            const cmdType = cmd[0];
+            const params = cmd.substring(1).trim();
+            const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+            const isAbsolute = cmdType === cmdType.toUpperCase();
+
+            let shouldAdd = true;
+            let targetX = currentX,
+                targetY = currentY;
+
+            switch (cmdType.toUpperCase()) {
+                case "M":
+                case "L":
+                    if (numbers.length >= 2) {
+                        const x = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[1]);
+                        targetX = isAbsolute ? x : currentX + x;
+                        targetY = isAbsolute ? y : currentY + y;
+
+                        // 현재 위치와 동일한 곳으로의 이동은 제거
+                        if (Math.abs(targetX - currentX) < 0.1 && Math.abs(targetY - currentY) < 0.1) {
+                            shouldAdd = false;
+                        }
+                    }
+                    break;
+                case "H":
+                    if (numbers.length >= 1) {
+                        const x = parseFloat(numbers[0]);
+                        targetX = isAbsolute ? x : currentX + x;
+                        if (Math.abs(targetX - currentX) < 0.1) {
+                            shouldAdd = false;
+                        }
+                    }
+                    break;
+                case "V":
+                    if (numbers.length >= 1) {
+                        const y = parseFloat(numbers[0]);
+                        targetY = isAbsolute ? y : currentY + y;
+                        if (Math.abs(targetY - currentY) < 0.1) {
+                            shouldAdd = false;
+                        }
+                    }
+                    break;
+                default:
+                    // C, Q, S, T, Z 명령어는 항상 유지
+                    if (cmdType.toUpperCase() === "C" && numbers.length >= 6) {
+                        const x = parseFloat(numbers[4]);
+                        const y = parseFloat(numbers[5]);
+                        targetX = isAbsolute ? x : currentX + x;
+                        targetY = isAbsolute ? y : currentY + y;
+                    } else if (cmdType.toUpperCase() === "Q" && numbers.length >= 4) {
+                        const x = parseFloat(numbers[2]);
+                        const y = parseFloat(numbers[3]);
+                        targetX = isAbsolute ? x : currentX + x;
+                        targetY = isAbsolute ? y : currentY + y;
+                    }
+                    break;
+            }
+
+            if (shouldAdd) {
+                cleanCommands.push(cmd);
+                currentX = targetX;
+                currentY = targetY;
+            }
+        }
+
+        return cleanCommands.join(" ");
+    } catch (error) {
+        console.warn("Failed to remove duplicate points:", error);
+        return path;
+    }
+}
+
+// 경로에 하나의 포인트를 추가하는 함수 (개선된 버전)
+function addSinglePointToPath(path: string): string {
+    try {
+        const commands = parseSVGPath(path);
+        let currentX = 0,
+            currentY = 0;
+        const segments: Array<{
+            command: string;
+            startX: number;
+            startY: number;
+            endX: number;
+            endY: number;
+            distance: number;
+            index: number;
+            curveType: string;
+            controlPoints: number[];
+        }> = [];
+
+        // 모든 선분의 길이를 계산 (M 명령어는 제외)
+        for (let i = 0; i < commands.length; i++) {
+            const cmd = commands[i];
+            const cmdType = cmd[0];
+            const params = cmd.substring(1).trim();
+            const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+            const isAbsolute = cmdType === cmdType.toUpperCase();
+
+            const startX = currentX;
+            const startY = currentY;
+
+            switch (cmdType.toUpperCase()) {
+                case "M":
+                    // M 명령어는 분할하지 않음 - 경로의 시작점이므로
+                    if (numbers.length >= 2) {
+                        const x = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[1]);
+                        currentX = isAbsolute ? x : currentX + x;
+                        currentY = isAbsolute ? y : currentY + y;
+                    }
+                    break;
+                case "L":
+                    if (numbers.length >= 2) {
+                        const x = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[1]);
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        const distance = getCurveLength(startX, startY, targetX, targetY, "line", []);
+                        if (distance > 5) {
+                            // 최소 거리를 늘려서 너무 작은 선분은 분할하지 않음
+                            segments.push({
+                                command: cmd,
+                                startX: startX,
+                                startY: startY,
+                                endX: targetX,
+                                endY: targetY,
+                                distance: distance,
+                                index: i,
+                                curveType: "line",
+                                controlPoints: [],
+                            });
+                        }
+
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "C":
+                    if (numbers.length >= 6) {
+                        const x1 = parseFloat(numbers[0]);
+                        const y1 = parseFloat(numbers[1]);
+                        const x2 = parseFloat(numbers[2]);
+                        const y2 = parseFloat(numbers[3]);
+                        const x = parseFloat(numbers[4]);
+                        const y = parseFloat(numbers[5]);
+
+                        const cp1X = isAbsolute ? x1 : currentX + x1;
+                        const cp1Y = isAbsolute ? y1 : currentY + y1;
+                        const cp2X = isAbsolute ? x2 : currentX + x2;
+                        const cp2Y = isAbsolute ? y2 : currentY + y2;
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        const distance = getCurveLength(startX, startY, targetX, targetY, "cubic", [cp1X, cp1Y, cp2X, cp2Y]);
+                        segments.push({
+                            command: cmd,
+                            startX: startX,
+                            startY: startY,
+                            endX: targetX,
+                            endY: targetY,
+                            distance: distance,
+                            index: i,
+                            curveType: "cubic",
+                            controlPoints: [cp1X, cp1Y, cp2X, cp2Y],
+                        });
+
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "Q":
+                    if (numbers.length >= 4) {
+                        const x1 = parseFloat(numbers[0]);
+                        const y1 = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[2]);
+                        const y = parseFloat(numbers[3]);
+
+                        const cpX = isAbsolute ? x1 : currentX + x1;
+                        const cpY = isAbsolute ? y1 : currentY + y1;
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        const distance = getCurveLength(startX, startY, targetX, targetY, "quadratic", [cpX, cpY]);
+                        segments.push({
+                            command: cmd,
+                            startX: startX,
+                            startY: startY,
+                            endX: targetX,
+                            endY: targetY,
+                            distance: distance,
+                            index: i,
+                            curveType: "quadratic",
+                            controlPoints: [cpX, cpY],
+                        });
+
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "H":
+                    if (numbers.length >= 1) {
+                        const x = parseFloat(numbers[0]);
+                        const targetX = isAbsolute ? x : currentX + x;
+
+                        const distance = Math.abs(targetX - startX);
+                        if (distance > 1) {
+                            segments.push({
+                                command: cmd,
+                                startX: startX,
+                                startY: startY,
+                                endX: targetX,
+                                endY: currentY,
+                                distance: distance,
+                                index: i,
+                                curveType: "line",
+                                controlPoints: [],
+                            });
+                        }
+
+                        currentX = targetX;
+                    }
+                    break;
+
+                case "V":
+                    if (numbers.length >= 1) {
+                        const y = parseFloat(numbers[0]);
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        const distance = Math.abs(targetY - startY);
+                        if (distance > 1) {
+                            segments.push({
+                                command: cmd,
+                                startX: startX,
+                                startY: startY,
+                                endX: currentX,
+                                endY: targetY,
+                                distance: distance,
+                                index: i,
+                                curveType: "line",
+                                controlPoints: [],
+                            });
+                        }
+
+                        currentY = targetY;
+                    }
+                    break;
+            }
+        }
+
+        if (segments.length === 0) {
+            return path;
+        }
+
+        // 가장 긴 선분을 찾아서 분할
+        segments.sort((a, b) => b.distance - a.distance);
+        const longestSegment = segments[0];
+
+        console.log(`Adding point to ${longestSegment.curveType} segment at index ${longestSegment.index}, distance: ${longestSegment.distance.toFixed(2)}`);
+
+        // 해당 명령어를 보간된 점으로 분할
+        const newCommands = [...commands];
+        const originalCmd = longestSegment.command;
+        const cmdType = originalCmd[0];
+
+        // 모든 경우에 대해 곡선 위의 중간점을 계산하여 직선으로 추가
+        // 이 방법이 더 안전하고 형태 왜곡이 적음
+        let midX, midY;
+
+        if (longestSegment.curveType === "line") {
+            // 직선의 경우 중간점
+            midX = (longestSegment.startX + longestSegment.endX) / 2;
+            midY = (longestSegment.startY + longestSegment.endY) / 2;
+        } else if (longestSegment.curveType === "cubic") {
+            // 3차 베지어 곡선 위의 t=0.5 지점
+            const midPoint = getPointOnCubicBezier(longestSegment.startX, longestSegment.startY, longestSegment.controlPoints[0], longestSegment.controlPoints[1], longestSegment.controlPoints[2], longestSegment.controlPoints[3], longestSegment.endX, longestSegment.endY, 0.5);
+            midX = midPoint.x;
+            midY = midPoint.y;
+        } else if (longestSegment.curveType === "quadratic") {
+            // 2차 베지어 곡선 위의 t=0.5 지점
+            const midPoint = getPointOnQuadraticBezier(longestSegment.startX, longestSegment.startY, longestSegment.controlPoints[0], longestSegment.controlPoints[1], longestSegment.endX, longestSegment.endY, 0.5);
+            midX = midPoint.x;
+            midY = midPoint.y;
+        } else {
+            // 기본값
+            midX = (longestSegment.startX + longestSegment.endX) / 2;
+            midY = (longestSegment.startY + longestSegment.endY) / 2;
+        }
+
+        // 원래 곡선은 그대로 두고, 중간점만 직선으로 추가
+        // 이렇게 하면 원래 곡선이 유지되면서 포인트만 추가됨
+        newCommands.splice(longestSegment.index + 1, 0, `L ${midX.toFixed(3)} ${midY.toFixed(3)}`);
+
+        console.log(`Added midpoint at (${midX.toFixed(3)}, ${midY.toFixed(3)}) for ${longestSegment.curveType} curve`);
+
+        // 결과에서 중복 포인트 제거
+        const result = newCommands.join(" ");
+        return removeDuplicatePoints(result);
+    } catch (error) {
+        console.warn("Failed to add point to path:", error);
+        return path;
+    }
+}
+
+// 원본 곡선을 보존하면서 포인트를 추가하는 하이브리드 방식
+function normalizePathPreservingCurves(path: string, targetPointCount: number): string {
+    try {
+        const cleanPath = removeDuplicatePoints(path);
+        const currentPoints = getAnchorPoints(cleanPath);
+
+        if (currentPoints.length >= targetPointCount) {
+            console.log(`Already has ${currentPoints.length} points, target is ${targetPointCount}`);
+            return cleanPath;
+        }
+
+        console.log(`Curve-preserving normalization: ${currentPoints.length} -> ${targetPointCount} points`);
+
+        const pointsToAdd = targetPointCount - currentPoints.length;
+        console.log(`Need to add ${pointsToAdd} points while preserving curves`);
+
+        // 원본 명령어들을 분석하여 곡선과 직선을 구분
+        const commands = parseSVGPath(cleanPath);
+        const segments = analyzePathSegments(cleanPath);
+
+        // 각 세그먼트의 복잡도(곡선 여부)와 길이를 고려하여 추가할 포인트 수 결정
+        const segmentWeights = segments.map((seg) => ({
+            ...seg,
+            priority: seg.isCurve ? seg.length * 1.5 : seg.length, // 곡선에 더 높은 우선순위
+            pointsToAdd: 0,
+        }));
+
+        // 전체 가중치 계산
+        const totalWeight = segmentWeights.reduce((sum, seg) => sum + seg.priority, 0);
+
+        // 각 세그먼트에 추가할 포인트 수 배분
+        let remainingPoints = pointsToAdd;
+        segmentWeights.forEach((seg) => {
+            if (remainingPoints > 0) {
+                const allocation = Math.round((seg.priority / totalWeight) * pointsToAdd);
+                seg.pointsToAdd = Math.min(allocation, remainingPoints);
+                remainingPoints -= seg.pointsToAdd;
+            }
+        });
+
+        // 남은 포인트는 가장 긴 세그먼트에 추가
+        if (remainingPoints > 0) {
+            segmentWeights.sort((a, b) => b.priority - a.priority);
+            for (let i = 0; i < segmentWeights.length && remainingPoints > 0; i++) {
+                segmentWeights[i].pointsToAdd++;
+                remainingPoints--;
+            }
+        }
+
+        console.log(
+            "Point allocation:",
+            segmentWeights.map((s) => `${s.type}:${s.pointsToAdd}`)
+        );
+
+        // 새로운 경로 구성
+        const newCommands: string[] = [];
+        let currentX = 0,
+            currentY = 0;
+        let segmentIndex = 0;
+
+        for (let i = 0; i < commands.length; i++) {
+            const cmd = commands[i];
+            const cmdType = cmd[0];
+
+            if (cmdType.toUpperCase() === "M") {
+                // M 명령어는 그대로 유지
+                newCommands.push(cmd);
+                const params = cmd.substring(1).trim();
+                const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+                if (numbers.length >= 2) {
+                    currentX = parseFloat(numbers[0]);
+                    currentY = parseFloat(numbers[1]);
+                }
+            } else if (cmdType.toUpperCase() === "Z") {
+                // Z 명령어는 마지막에 추가
+                newCommands.push(cmd);
+            } else {
+                // 다른 명령어들에 대해 포인트 추가 처리
+                if (segmentIndex < segmentWeights.length) {
+                    const segment = segmentWeights[segmentIndex];
+
+                    if (segment.pointsToAdd > 0 && segment.isCurve) {
+                        // 곡선인 경우: 곡선을 세분화
+                        const subdividedCommands = subdivideCommand(cmd, currentX, currentY, segment.pointsToAdd);
+                        newCommands.push(...subdividedCommands);
+                    } else if (segment.pointsToAdd > 0 && !segment.isCurve) {
+                        // 직선인 경우: 중간점들을 추가
+                        const intermediatePoints = createIntermediatePoints(cmd, currentX, currentY, segment.pointsToAdd);
+                        newCommands.push(...intermediatePoints);
+                    } else {
+                        // 포인트를 추가하지 않는 경우 원본 명령어 유지
+                        newCommands.push(cmd);
+                    }
+
+                    // 현재 위치 업데이트
+                    const endPoint = getCommandEndPoint(cmd, currentX, currentY);
+                    currentX = endPoint.x;
+                    currentY = endPoint.y;
+
+                    segmentIndex++;
+                } else {
+                    newCommands.push(cmd);
+                }
+            }
+        }
+
+        const result = newCommands.join(" ");
+        const finalPoints = getAnchorPoints(result).length;
+        console.log(`Final curve-preserving normalization: ${currentPoints.length} -> ${finalPoints} points`);
+
+        return result;
+    } catch (error) {
+        console.warn("Curve-preserving normalization failed:", error);
+        return path;
+    }
+}
+
+// 경로 세그먼트들을 분석하는 함수
+function analyzePathSegments(path: string): Array<{ type: string; isCurve: boolean; length: number; command: string }> {
+    const commands = parseSVGPath(path);
+    const segments: Array<{ type: string; isCurve: boolean; length: number; command: string }> = [];
+    let currentX = 0,
+        currentY = 0;
+
+    for (const cmd of commands) {
+        const cmdType = cmd[0];
+        const params = cmd.substring(1).trim();
+        const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+        const isAbsolute = cmdType === cmdType.toUpperCase();
+
+        let length = 0;
+        let isCurve = false;
+        let targetX = currentX,
+            targetY = currentY;
+
+        switch (cmdType.toUpperCase()) {
+            case "M":
+                // M 명령어는 세그먼트로 취급하지 않음
+                if (numbers.length >= 2) {
+                    currentX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+                    currentY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+                }
+                continue;
+
+            case "L":
+                if (numbers.length >= 2) {
+                    targetX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+                    targetY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+                    length = Math.sqrt((targetX - currentX) ** 2 + (targetY - currentY) ** 2);
+                }
+                break;
+
+            case "H":
+                if (numbers.length >= 1) {
+                    targetX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+                    length = Math.abs(targetX - currentX);
+                }
+                break;
+
+            case "V":
+                if (numbers.length >= 1) {
+                    targetY = isAbsolute ? parseFloat(numbers[0]) : currentY + parseFloat(numbers[0]);
+                    length = Math.abs(targetY - currentY);
+                }
+                break;
+
+            case "C":
+                isCurve = true;
+                if (numbers.length >= 6) {
+                    targetX = isAbsolute ? parseFloat(numbers[4]) : currentX + parseFloat(numbers[4]);
+                    targetY = isAbsolute ? parseFloat(numbers[5]) : currentY + parseFloat(numbers[5]);
+                    const cp1X = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+                    const cp1Y = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+                    const cp2X = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
+                    const cp2Y = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
+                    length = getCurveLength(currentX, currentY, targetX, targetY, "cubic", [cp1X, cp1Y, cp2X, cp2Y]);
+                }
+                break;
+
+            case "Q":
+                isCurve = true;
+                if (numbers.length >= 4) {
+                    targetX = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
+                    targetY = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
+                    const cpX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+                    const cpY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+                    length = getCurveLength(currentX, currentY, targetX, targetY, "quadratic", [cpX, cpY]);
+                }
+                break;
+
+            case "Z":
+                // Z 명령어는 세그먼트로 취급하지 않음
+                continue;
+        }
+
+        if (length > 0) {
+            segments.push({
+                type: cmdType.toUpperCase(),
+                isCurve: isCurve,
+                length: length,
+                command: cmd,
+            });
+        }
+
+        currentX = targetX;
+        currentY = targetY;
+    }
+
+    return segments;
+}
+
+// 명령어의 끝점을 구하는 함수
+function getCommandEndPoint(cmd: string, currentX: number, currentY: number): { x: number; y: number } {
+    const cmdType = cmd[0];
+    const params = cmd.substring(1).trim();
+    const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+    const isAbsolute = cmdType === cmdType.toUpperCase();
+
+    switch (cmdType.toUpperCase()) {
+        case "L":
+        case "M":
+            if (numbers.length >= 2) {
+                return {
+                    x: isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]),
+                    y: isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]),
+                };
+            }
+            break;
+        case "H":
+            if (numbers.length >= 1) {
+                return {
+                    x: isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]),
+                    y: currentY,
+                };
+            }
+            break;
+        case "V":
+            if (numbers.length >= 1) {
+                return {
+                    x: currentX,
+                    y: isAbsolute ? parseFloat(numbers[0]) : currentY + parseFloat(numbers[0]),
+                };
+            }
+            break;
+        case "C":
+            if (numbers.length >= 6) {
+                return {
+                    x: isAbsolute ? parseFloat(numbers[4]) : currentX + parseFloat(numbers[4]),
+                    y: isAbsolute ? parseFloat(numbers[5]) : currentY + parseFloat(numbers[5]),
+                };
+            }
+            break;
+        case "Q":
+            if (numbers.length >= 4) {
+                return {
+                    x: isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]),
+                    y: isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]),
+                };
+            }
+            break;
+    }
+
+    return { x: currentX, y: currentY };
+}
+
+// 곡선 명령어를 세분화하는 함수
+function subdivideCommand(cmd: string, currentX: number, currentY: number, subdivisions: number): string[] {
+    const cmdType = cmd[0];
+    const params = cmd.substring(1).trim();
+    const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+    const isAbsolute = cmdType === cmdType.toUpperCase();
+
+    if (cmdType.toUpperCase() === "C" && numbers.length >= 6) {
+        // 3차 베지어 곡선 세분화
+        const cp1X = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+        const cp1Y = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+        const cp2X = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
+        const cp2Y = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
+        const endX = isAbsolute ? parseFloat(numbers[4]) : currentX + parseFloat(numbers[4]);
+        const endY = isAbsolute ? parseFloat(numbers[5]) : currentY + parseFloat(numbers[5]);
+
+        const parts: string[] = [];
+        const segments = subdivisions + 1;
+
+        for (let i = 0; i < segments; i++) {
+            const t1 = i / segments;
+            const t2 = (i + 1) / segments;
+
+            const subdivided = subdivideCubicBezierRange(currentX, currentY, cp1X, cp1Y, cp2X, cp2Y, endX, endY, t1, t2);
+            parts.push(`C ${subdivided[2]} ${subdivided[3]} ${subdivided[4]} ${subdivided[5]} ${subdivided[6]} ${subdivided[7]}`);
+        }
+
+        return parts;
+    } else if (cmdType.toUpperCase() === "Q" && numbers.length >= 4) {
+        // 2차 베지어 곡선 세분화
+        const cpX = isAbsolute ? parseFloat(numbers[0]) : currentX + parseFloat(numbers[0]);
+        const cpY = isAbsolute ? parseFloat(numbers[1]) : currentY + parseFloat(numbers[1]);
+        const endX = isAbsolute ? parseFloat(numbers[2]) : currentX + parseFloat(numbers[2]);
+        const endY = isAbsolute ? parseFloat(numbers[3]) : currentY + parseFloat(numbers[3]);
+
+        const parts: string[] = [];
+        const segments = subdivisions + 1;
+
+        for (let i = 0; i < segments; i++) {
+            const t1 = i / segments;
+            const t2 = (i + 1) / segments;
+
+            const subdivided = subdivideQuadraticBezierRange(currentX, currentY, cpX, cpY, endX, endY, t1, t2);
+            parts.push(`Q ${subdivided[2]} ${subdivided[3]} ${subdivided[4]} ${subdivided[5]}`);
+        }
+
+        return parts;
+    }
+
+    // 곡선이 아닌 경우 원본 반환
+    return [cmd];
+}
+
+// 직선에 중간점들을 추가하는 함수
+function createIntermediatePoints(cmd: string, currentX: number, currentY: number, pointCount: number): string[] {
+    const endPoint = getCommandEndPoint(cmd, currentX, currentY);
+    const parts: string[] = [];
+
+    for (let i = 1; i <= pointCount + 1; i++) {
+        const ratio = i / (pointCount + 1);
+        const x = currentX + (endPoint.x - currentX) * ratio;
+        const y = currentY + (endPoint.y - currentY) * ratio;
+
+        if (i === pointCount + 1) {
+            // 마지막은 원본 명령어 사용
+            parts.push(cmd);
+        } else {
+            // 중간점들은 L 명령어로
+            parts.push(`L ${x.toFixed(3)} ${y.toFixed(3)}`);
+        }
+    }
+
+    return parts;
+}
+
+// 베지어 곡선의 특정 구간을 추출하는 함수
+function subdivideCubicBezierRange(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, t1: number, t2: number): number[] {
+    // t1에서 t2까지의 구간을 추출
+    const point1 = getPointOnCubicBezier(x0, y0, x1, y1, x2, y2, x3, y3, t1);
+    const point2 = getPointOnCubicBezier(x0, y0, x1, y1, x2, y2, x3, y3, t2);
+
+    // 간단한 근사: 직선으로 연결하되 곡선의 특성을 반영한 제어점 계산
+    const cp1X = point1.x + (point2.x - point1.x) * 0.25;
+    const cp1Y = point1.y + (point2.y - point1.y) * 0.25;
+    const cp2X = point1.x + (point2.x - point1.x) * 0.75;
+    const cp2Y = point1.y + (point2.y - point1.y) * 0.75;
+
+    return [point1.x, point1.y, cp1X, cp1Y, cp2X, cp2Y, point2.x, point2.y];
+}
+
+// 2차 베지어 곡선의 특정 구간을 추출하는 함수
+function subdivideQuadraticBezierRange(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t1: number, t2: number): number[] {
+    const point1 = getPointOnQuadraticBezier(x0, y0, x1, y1, x2, y2, t1);
+    const point2 = getPointOnQuadraticBezier(x0, y0, x1, y1, x2, y2, t2);
+
+    // 중간 제어점 계산
+    const cpX = (point1.x + point2.x) / 2;
+    const cpY = (point1.y + point2.y) / 2;
+
+    return [point1.x, point1.y, cpX, cpY, point2.x, point2.y];
+}
+
+// 경로의 전체 길이를 계산하는 함수
+function calculateTotalPathLength(path: string): number {
+    try {
+        const commands = parseSVGPath(path);
+        let totalLength = 0;
+        let currentX = 0,
+            currentY = 0;
+
+        for (const cmd of commands) {
+            const cmdType = cmd[0];
+            const params = cmd.substring(1).trim();
+            const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+            const isAbsolute = cmdType === cmdType.toUpperCase();
+
+            const startX = currentX;
+            const startY = currentY;
+
+            switch (cmdType.toUpperCase()) {
+                case "M":
+                case "L":
+                    if (numbers.length >= 2) {
+                        const x = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[1]);
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        if (cmdType.toUpperCase() === "L") {
+                            // M은 길이에 포함하지 않음
+                            totalLength += Math.sqrt((targetX - currentX) ** 2 + (targetY - currentY) ** 2);
+                        }
+
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "H":
+                    if (numbers.length >= 1) {
+                        const x = parseFloat(numbers[0]);
+                        const targetX = isAbsolute ? x : currentX + x;
+                        totalLength += Math.abs(targetX - currentX);
+                        currentX = targetX;
+                    }
+                    break;
+
+                case "V":
+                    if (numbers.length >= 1) {
+                        const y = parseFloat(numbers[0]);
+                        const targetY = isAbsolute ? y : currentY + y;
+                        totalLength += Math.abs(targetY - currentY);
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "C":
+                    if (numbers.length >= 6) {
+                        const x1 = parseFloat(numbers[0]);
+                        const y1 = parseFloat(numbers[1]);
+                        const x2 = parseFloat(numbers[2]);
+                        const y2 = parseFloat(numbers[3]);
+                        const x = parseFloat(numbers[4]);
+                        const y = parseFloat(numbers[5]);
+
+                        const cp1X = isAbsolute ? x1 : currentX + x1;
+                        const cp1Y = isAbsolute ? y1 : currentY + y1;
+                        const cp2X = isAbsolute ? x2 : currentX + x2;
+                        const cp2Y = isAbsolute ? y2 : currentY + y2;
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        totalLength += getCurveLength(currentX, currentY, targetX, targetY, "cubic", [cp1X, cp1Y, cp2X, cp2Y]);
+
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "Q":
+                    if (numbers.length >= 4) {
+                        const x1 = parseFloat(numbers[0]);
+                        const y1 = parseFloat(numbers[1]);
+                        const x = parseFloat(numbers[2]);
+                        const y = parseFloat(numbers[3]);
+
+                        const cpX = isAbsolute ? x1 : currentX + x1;
+                        const cpY = isAbsolute ? y1 : currentY + y1;
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        totalLength += getCurveLength(currentX, currentY, targetX, targetY, "quadratic", [cpX, cpY]);
+
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+            }
+        }
+
+        return totalLength;
+    } catch (error) {
+        console.warn("Failed to calculate path length:", error);
+        return 0;
+    }
+}
+
+// 경로 상에서 특정 거리에 있는 점을 찾는 함수
+function getPointAtDistance(path: string, targetDistance: number): { x: number; y: number } | null {
+    try {
+        const commands = parseSVGPath(path);
+        let currentDistance = 0;
+        let currentX = 0,
+            currentY = 0;
+
+        if (targetDistance <= 0) {
+            // 시작점 반환
+            const firstCmd = commands[0];
+            if (firstCmd && firstCmd[0].toUpperCase() === "M") {
+                const params = firstCmd.substring(1).trim();
+                const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+                if (numbers.length >= 2) {
+                    return { x: parseFloat(numbers[0]), y: parseFloat(numbers[1]) };
+                }
+            }
+            return { x: 0, y: 0 };
+        }
+
+        for (const cmd of commands) {
+            const cmdType = cmd[0];
+            const params = cmd.substring(1).trim();
+            const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+            const isAbsolute = cmdType === cmdType.toUpperCase();
+
+            const startX = currentX;
+            const startY = currentY;
+
+            switch (cmdType.toUpperCase()) {
+                case "M":
+                    if (numbers.length >= 2) {
+                        const x = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[1]);
+                        currentX = isAbsolute ? x : currentX + x;
+                        currentY = isAbsolute ? y : currentY + y;
+                    }
+                    break;
+
+                case "L":
+                    if (numbers.length >= 2) {
+                        const x = parseFloat(numbers[0]);
+                        const y = parseFloat(numbers[1]);
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        const segmentLength = Math.sqrt((targetX - currentX) ** 2 + (targetY - currentY) ** 2);
+
+                        if (currentDistance + segmentLength >= targetDistance) {
+                            // 이 세그먼트 안에 목표 거리가 있음
+                            const ratio = (targetDistance - currentDistance) / segmentLength;
+                            return {
+                                x: currentX + (targetX - currentX) * ratio,
+                                y: currentY + (targetY - currentY) * ratio,
+                            };
+                        }
+
+                        currentDistance += segmentLength;
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "H":
+                    if (numbers.length >= 1) {
+                        const x = parseFloat(numbers[0]);
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const segmentLength = Math.abs(targetX - currentX);
+
+                        if (currentDistance + segmentLength >= targetDistance) {
+                            const ratio = (targetDistance - currentDistance) / segmentLength;
+                            return {
+                                x: currentX + (targetX - currentX) * ratio,
+                                y: currentY,
+                            };
+                        }
+
+                        currentDistance += segmentLength;
+                        currentX = targetX;
+                    }
+                    break;
+
+                case "V":
+                    if (numbers.length >= 1) {
+                        const y = parseFloat(numbers[0]);
+                        const targetY = isAbsolute ? y : currentY + y;
+                        const segmentLength = Math.abs(targetY - currentY);
+
+                        if (currentDistance + segmentLength >= targetDistance) {
+                            const ratio = (targetDistance - currentDistance) / segmentLength;
+                            return {
+                                x: currentX,
+                                y: currentY + (targetY - currentY) * ratio,
+                            };
+                        }
+
+                        currentDistance += segmentLength;
+                        currentY = targetY;
+                    }
+                    break;
+
+                // C, Q 곡선의 경우 단순화하여 직선으로 근사
+                case "C":
+                    if (numbers.length >= 6) {
+                        const x = parseFloat(numbers[4]);
+                        const y = parseFloat(numbers[5]);
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        // 곡선 길이 근사
+                        const segmentLength = Math.sqrt((targetX - currentX) ** 2 + (targetY - currentY) ** 2) * 1.2; // 곡선이므로 1.2배
+
+                        if (currentDistance + segmentLength >= targetDistance) {
+                            const ratio = (targetDistance - currentDistance) / segmentLength;
+                            return {
+                                x: currentX + (targetX - currentX) * ratio,
+                                y: currentY + (targetY - currentY) * ratio,
+                            };
+                        }
+
+                        currentDistance += segmentLength;
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+
+                case "Q":
+                    if (numbers.length >= 4) {
+                        const x = parseFloat(numbers[2]);
+                        const y = parseFloat(numbers[3]);
+                        const targetX = isAbsolute ? x : currentX + x;
+                        const targetY = isAbsolute ? y : currentY + y;
+
+                        const segmentLength = Math.sqrt((targetX - currentX) ** 2 + (targetY - currentY) ** 2) * 1.1; // 곡선이므로 1.1배
+
+                        if (currentDistance + segmentLength >= targetDistance) {
+                            const ratio = (targetDistance - currentDistance) / segmentLength;
+                            return {
+                                x: currentX + (targetX - currentX) * ratio,
+                                y: currentY + (targetY - currentY) * ratio,
+                            };
+                        }
+
+                        currentDistance += segmentLength;
+                        currentX = targetX;
+                        currentY = targetY;
+                    }
+                    break;
+            }
+        }
+
+        // 목표 거리가 경로 끝을 넘어선 경우 마지막 점 반환
+        return { x: currentX, y: currentY };
+    } catch (error) {
+        console.warn("Failed to get point at distance:", error);
+        return null;
+    }
+}
+
+// 모든 경로의 포인트 수를 최대값으로 맞추는 함수 (곡선 보존 방식)
+function normalizeAllPaths(paths: string[]): string[] {
+    const pointCounts = paths.map((path) => getAnchorPoints(path).length);
+    const maxPoints = Math.max(...pointCounts);
+
+    console.log("Point counts:", pointCounts, "Max:", maxPoints);
+
+    return paths.map((path, index) => {
+        const currentPoints = pointCounts[index];
+        if (currentPoints < maxPoints) {
+            console.log(`Curve-preserving normalizing path ${index}: ${currentPoints} -> ${maxPoints} points`);
+            return normalizePathPreservingCurves(path, maxPoints);
+        }
+        return path;
+    });
+}
+
 // 경로를 시작점부터 재구성하는 함수 (곡선 보존 + 포인트 수 유지)
 function reorderPathSafely(path: string, startIndex: number): string {
     try {
@@ -553,6 +1666,7 @@ export default function Home() {
     const [paths, setPaths] = useState<string[]>(["M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z"]);
     const [pathHistory, setPathHistory] = useState<string[][]>([["M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z"]]);
     const [historyIndex, setHistoryIndex] = useState(0);
+    const [isNormalized, setIsNormalized] = useState(false); // 정규화 상태 추적
     const [t, setT] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [animationSpeed, setAnimationSpeed] = useState(2);
@@ -576,6 +1690,7 @@ export default function Home() {
             const newIndex = historyIndex - 1;
             setHistoryIndex(newIndex);
             setPaths([...pathHistory[newIndex]]);
+            setIsNormalized(false); // undo시 정규화 상태 해제
         }
     };
 
@@ -585,6 +1700,7 @@ export default function Home() {
             const newIndex = historyIndex + 1;
             setHistoryIndex(newIndex);
             setPaths([...pathHistory[newIndex]]);
+            setIsNormalized(false); // redo시 정규화 상태 해제
         }
     };
 
@@ -610,12 +1726,14 @@ export default function Home() {
         newPaths[index] = value;
         setPaths(newPaths);
         saveToHistory(newPaths);
+        setIsNormalized(false); // 경로 수정시 정규화 상태 해제
     };
 
     const addNewPath = () => {
         const newPaths = [...paths, ""];
         setPaths(newPaths);
         saveToHistory(newPaths);
+        setIsNormalized(false); // 새 경로 추가시 정규화 상태 해제
         toast.success("새 경로가 추가되었습니다");
     };
 
@@ -624,6 +1742,7 @@ export default function Home() {
             const newPaths = paths.filter((_, i) => i !== index);
             setPaths(newPaths);
             saveToHistory(newPaths);
+            setIsNormalized(false); // 경로 삭제시 정규화 상태 해제
             toast.success(`#${index} 경로가 삭제되었습니다`);
         }
     };
@@ -638,6 +1757,7 @@ export default function Home() {
                 if (extractedPaths.length > 0) {
                     setPaths(extractedPaths);
                     saveToHistory(extractedPaths);
+                    setIsNormalized(false); // 파일 업로드시 정규화 상태 해제
                     toast.success(`SVG 파일에서 ${extractedPaths.length}개의 경로를 가져왔습니다`);
                 } else {
                     toast.error("SVG 파일에 경로가 없습니다");
@@ -884,7 +2004,28 @@ export default function Home() {
                             <div key={index} className="path-group">
                                 <div className="path-header">
                                     <label className="label">
-                                        Path {index + 1} <span className="chip">{getAnchorPoints(path).length} Points</span>
+                                        Path {index + 1}
+                                        {(() => {
+                                            // 정규화 상태를 확인하는 조건들
+                                            const hasValidPath = path.trim().length > 0;
+                                            const allPointCounts = paths.filter((p) => p.trim().length > 0).map((p) => getAnchorPoints(p).length);
+                                            const maxPoints = Math.max(...allPointCounts);
+                                            const currentPoints = getAnchorPoints(path).length;
+                                            const validPaths = paths.filter((p) => p.trim().length > 0);
+
+                                            // 정규화됨 표시 조건:
+                                            // 1. 실제로 정규화 버튼을 눌렀어야 함 (isNormalized === true)
+                                            // 2. 유효한 경로가 2개 이상 있어야 함
+                                            // 3. 현재 경로가 유효해야 함
+                                            // 4. 현재 경로의 포인트 수가 최대값과 같아야 함
+                                            const shouldShowNormalized = isNormalized && validPaths.length > 1 && hasValidPath && currentPoints === maxPoints && currentPoints > 0;
+
+                                            return (
+                                                <span className={`chip ${shouldShowNormalized ? "normalized" : ""}`}>
+                                                    {currentPoints} Points{shouldShowNormalized ? " - 정규화됨" : ""}
+                                                </span>
+                                            );
+                                        })()}
                                     </label>
                                     <div className="button-wrap">
                                         {paths.length > 1 && (
@@ -914,9 +2055,35 @@ export default function Home() {
                                 </div>
                             </div>
                         ))}
-                        <button onClick={addNewPath} className="btn text full">
-                            <Plus className="icon" size={16} /> 새 경로 추가
-                        </button>
+                        <div className="button-row">
+                            <button onClick={addNewPath} className="btn text">
+                                <Plus className="icon" size={16} /> 새 경로 추가
+                            </button>
+                            <button
+                                onClick={() => {
+                                    const normalized = normalizeAllPaths(paths);
+                                    setPaths(normalized);
+                                    saveToHistory(normalized);
+                                    setIsNormalized(true); // 정규화 완료 상태로 설정
+                                    toast.success("모든 경로의 포인트 수를 맞췄습니다");
+                                }}
+                                className="btn secondary"
+                                disabled={(() => {
+                                    // 유효한 경로들만 필터링 (빈 문자열이 아닌 경로)
+                                    const validPaths = paths.filter(path => path.trim().length > 0);
+                                    return validPaths.length < 2;
+                                })()}
+                                title={(() => {
+                                    const validPaths = paths.filter(path => path.trim().length > 0);
+                                    if (validPaths.length < 2) {
+                                        return "내용이 있는 경로가 2개 이상 필요합니다";
+                                    }
+                                    return "모든 경로의 포인트 수를 최대값으로 맞춤";
+                                })()}
+                            >
+                                <Target className="icon" size={16} /> 포인트 수 맞추기
+                            </button>
+                        </div>
                     </div>
 
                     <div className="section animation-section">
