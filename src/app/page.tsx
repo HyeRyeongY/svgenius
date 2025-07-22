@@ -2086,10 +2086,12 @@ export default function Home() {
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [currentStartIndex, setCurrentStartIndex] = useState<number>(0);
     useEffect(() => {
-        if (currentPath) {
+        if (currentPath && currentPath.trim()) {
             const points = getAnchorPoints(currentPath);
             setAnchorPoints(points);
             setCurrentStartIndex(0); // 기본값은 0 (M 명령어 기준)
+        } else {
+            setAnchorPoints([]);
         }
     }, [currentPath]);
 
