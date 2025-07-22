@@ -1,5 +1,10 @@
-// next.config.js
-/** @type {import('next').NextConfig} */
-const nextConfig = {};
+import type { NextConfig } from "next";
 
-module.exports = nextConfig;
+const nextConfig: NextConfig = {
+    // 빌드 시 타입 체크를 건너뛰도록 설정 (선택사항)
+    typescript: {
+        ignoreBuildErrors: false,
+    },
+};
+
+export default nextConfig;

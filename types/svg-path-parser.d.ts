@@ -15,4 +15,5 @@ declare module "svg-path-parser" {
 
     export function parseSVG(path: string): SVGCommand[];
     export function makeAbsolute(commands: SVGCommand[]): SVGCommand[];
+    export function makeRelative(commands: SVGCommand[]): SVGCommand[];
 }

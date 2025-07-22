@@ -5,6 +5,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Plus, Play, Pause, RotateCcw } from "lucide-react";
 import { parseSVG, makeAbsolute, type SVGCommand } from "svg-path-parser";
+import Image from "next/image";
 
 function reorderPathPreservingClosureStrict(path: string, startIndex: number): string {
     let commands = makeAbsolute(parseSVG(path));
@@ -67,6 +68,11 @@ function getAnchorPoints(path: string): AnchorPoint[] {
 
 /* export */
 function exportPathAsSVG(path: string, index: number) {
+    // 브라우저 환경에서만 실행되도록 체크
+    if (typeof window === "undefined") {
+        return;
+    }
+
     const svg = `<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><path d="${path}" fill="black"/></svg>`;
     const blob = new Blob([svg], { type: "image/svg+xml" });
     const url = URL.createObjectURL(blob);
@@ -79,6 +85,11 @@ function exportPathAsSVG(path: string, index: number) {
 }
 
 function extractPathsFromSVG(svgContent: string): string[] {
+    // 브라우저 환경에서만 실행되도록 체크
+    if (typeof window === "undefined") {
+        return [];
+    }
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgContent, "image/svg+xml");
     const paths = doc.querySelectorAll("path");
@@ -113,7 +124,7 @@ export default function Home() {
     const [animationSpeed, setAnimationSpeed] = useState(2);
     const [previewIndex, setPreviewIndex] = useState<number | null>(0);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const animationRef = useRef<number>();
+    const animationRef = useRef<number | undefined>(undefined);
 
     const currentPath = previewIndex != null ? paths[previewIndex] : "";
 
@@ -249,7 +260,7 @@ export default function Home() {
         <div className="app-wrapper">
             <header className="header">
                 <div className="logo-area">
-                    <img src="/SVGenius.svg" alt="" />
+                    <Image src="/SVGenius.svg" alt="SVGenius Logo" width={32} height={32} />
                     <h1 className="title">SVGenius</h1>
                 </div>
                 <p className="subtitle">Smart morphing. Genius level SVG path manipulation.</p>
