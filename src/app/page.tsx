@@ -900,8 +900,8 @@ export default function Home() {
                                             className={`btn preview-btn ${previewIndex === index ? "active" : "text"}`}
                                             title={previewIndex === index ? "미리보기 끄기" : "미리보기 켜기"}
                                         >
-                                            {previewIndex === index ? <Play className="icon" size={16} /> : <Square className="icon" size={16} />}
                                             <span>미리보기</span>
+                                            {previewIndex === index ? <Play className="icon" size={16} /> : <Square className="icon" size={16} />}
                                         </button>
                                     </div>
                                 </div>
@@ -960,27 +960,48 @@ export default function Home() {
                                 <span className="chip">{currentPath.length} Characters</span>
                             </div>
                         </div>
-                        <div className="preview">
-                            {/* 앵커 */}
-                            <svg viewBox={viewBox} width="100%" height="100%">
-                                {currentPath ? (
-                                    <>
-                                        <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
-                                        {anchorPoints.map((pt, i) => (
-                                            <g key={i} style={{ cursor: "pointer" }} onClick={() => setSelectedIndex(i)}>
-                                                <circle cx={pt.x} cy={pt.y} r={4} fill={i === selectedIndex ? "#FF4D47" : i === currentStartIndex ? "#FFBB00" : "#666"} stroke="#fff" strokeWidth={1} />
-                                                <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="10" fill={i === selectedIndex ? "#FF4D47" : i === currentStartIndex ? "#FFBB00" : "#ddd"} fontWeight="bold" style={{ pointerEvents: "none" }}>
-                                                    {i}
-                                                </text>
-                                            </g>
-                                        ))}
-                                    </>
-                                ) : (
-                                    <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
-                                        경로를 추가하여 미리보기
-                                    </text>
-                                )}
-                            </svg>
+                        <div className="preview-container">
+                            {/* 포인트 리스트 */}
+                            <div className="point-list">
+                                <h3 className="point-list-title">Points</h3>
+                                <div className="point-items">
+                                    {anchorPoints.length > 0 ? (
+                                        anchorPoints.map((pt, i) => (
+                                            <button key={i} className={`point-item ${i === selectedIndex ? "selected" : ""} ${i === currentStartIndex ? "start" : ""}`} onClick={() => setSelectedIndex(i)} title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}>
+                                                <span className="point-number">{i}</span>
+                                                <span className="point-coords">
+                                                    x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
+                                                </span>
+                                            </button>
+                                        ))
+                                    ) : (
+                                        <div className="no-points">포인트가 없습니다</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* SVG 미리보기 */}
+                            <div className="preview">
+                                <svg viewBox={viewBox} width="100%" height="100%">
+                                    {currentPath ? (
+                                        <>
+                                            <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
+                                            {anchorPoints.map((pt, i) => (
+                                                <g key={i} style={{ cursor: "pointer" }} onClick={() => setSelectedIndex(i)}>
+                                                    <circle cx={pt.x} cy={pt.y} r={4} fill={i === selectedIndex ? "#FF4D47" : i === currentStartIndex ? "#FFBB00" : "#666"} stroke="#fff" strokeWidth={1} />
+                                                    <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="10" fill={i === selectedIndex ? "#FF4D47" : i === currentStartIndex ? "#FFBB00" : "#ddd"} fontWeight="bold" style={{ pointerEvents: "none" }}>
+                                                        {i}
+                                                    </text>
+                                                </g>
+                                            ))}
+                                        </>
+                                    ) : (
+                                        <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
+                                            경로를 추가하여 미리보기
+                                        </text>
+                                    )}
+                                </svg>
+                            </div>
                         </div>
                         <button className="btn primary" onClick={handleSetStartPoint} disabled={selectedIndex === null}>
                             <Target className="icon" size={16} />

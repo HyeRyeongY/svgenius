@@ -10,6 +10,23 @@ body {
   color: #fff;
 }
 
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a1a;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #555;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #666;
+}
+
 /* layout */
 .header {
   text-align: center;
@@ -49,6 +66,9 @@ body {
 .panel {
   flex: 1;
   min-width: 300px;
+}
+.panel.left {
+  max-width: 400px;
 }
 
 .section {
@@ -157,7 +177,7 @@ body {
 }
 
 .btn.text {
-  color: #888;
+  color: #aaa;
   border: none;
 }
 
@@ -287,10 +307,76 @@ input[type=range]::-webkit-slider-thumb {
 .preview-section .button-row {
   margin-top: 1rem;
 }
+.preview-section .preview-container {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+.preview-section .point-list {
+  width: 160px;
+  flex-shrink: 0;
+  background: #2a2a2a;
+  border-radius: 4px;
+  padding: 1rem;
+}
+.preview-section .point-list .point-list-title {
+  font-size: 1.4rem;
+  font-weight: 600;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.5rem;
+}
+.preview-section .point-list .point-items {
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.preview-section .point-list .point-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 6px 8px;
+  margin-bottom: 6px;
+  background: #1a1a1a;
+  border-radius: 4px;
+  color: #ccc;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.preview-section .point-list .point-item:hover {
+  background: #333;
+  border-color: #666;
+}
+.preview-section .point-list .point-item.selected {
+  background: #FF4D47;
+  border-color: #FF4D47;
+  color: #fff;
+}
+.preview-section .point-list .point-item.start {
+  background: #FFBB00;
+  border-color: #FFBB00;
+  color: #000;
+}
+.preview-section .point-list .point-item .point-number {
+  font-weight: 600;
+}
+.preview-section .point-list .point-item .point-coords {
+  font-size: 1.2rem;
+  opacity: 0.8;
+}
+.preview-section .point-list .no-points {
+  text-align: center;
+  color: #666;
+  font-style: italic;
+  padding: 2rem 1rem;
+}
 .preview-section .preview {
   background: #333;
   border-radius: 0.5rem;
   padding: 1rem;
   aspect-ratio: 1/1;
-  margin-bottom: 1rem;
+  flex: 1;
 }
