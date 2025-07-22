@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Minus, Target } from "lucide-react";
+import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Minus, Target, Copy } from "lucide-react";
 
 import Image from "next/image";
 
@@ -175,8 +175,116 @@ function extractPathsFromSVG(svgContent: string): string[] {
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(svgContent, "image/svg+xml");
+    const extractedPaths: string[] = [];
+
+    // path 요소에서 직접 추출
     const paths = doc.querySelectorAll("path");
-    return Array.from(paths).map((path) => path.getAttribute("d") || "");
+    paths.forEach((path) => {
+        const d = path.getAttribute("d");
+        if (d && d.trim()) {
+            extractedPaths.push(d.trim());
+        }
+    });
+
+    // rect를 path로 변환
+    const rects = doc.querySelectorAll("rect");
+    rects.forEach((rect) => {
+        const x = parseFloat(rect.getAttribute("x") || "0");
+        const y = parseFloat(rect.getAttribute("y") || "0");
+        const width = parseFloat(rect.getAttribute("width") || "0");
+        const height = parseFloat(rect.getAttribute("height") || "0");
+        const rx = parseFloat(rect.getAttribute("rx") || "0");
+        const ry = parseFloat(rect.getAttribute("ry") || "0");
+
+        if (width > 0 && height > 0) {
+            let pathData = "";
+            if (rx > 0 || ry > 0) {
+                // 둥근 모서리 사각형
+                const effectiveRx = Math.min(rx || ry, width / 2);
+                const effectiveRy = Math.min(ry || rx, height / 2);
+                pathData = `M${x + effectiveRx} ${y} L${x + width - effectiveRx} ${y} Q${x + width} ${y} ${x + width} ${y + effectiveRy} L${x + width} ${y + height - effectiveRy} Q${x + width} ${y + height} ${x + width - effectiveRx} ${y + height} L${x + effectiveRx} ${y + height} Q${x} ${y + height} ${x} ${y + height - effectiveRy} L${x} ${y + effectiveRy} Q${x} ${y} ${x + effectiveRx} ${y} Z`;
+            } else {
+                // 일반 사각형
+                pathData = `M${x} ${y} L${x + width} ${y} L${x + width} ${y + height} L${x} ${y + height} Z`;
+            }
+            extractedPaths.push(pathData);
+        }
+    });
+
+    // circle을 path로 변환
+    const circles = doc.querySelectorAll("circle");
+    circles.forEach((circle) => {
+        const cx = parseFloat(circle.getAttribute("cx") || "0");
+        const cy = parseFloat(circle.getAttribute("cy") || "0");
+        const r = parseFloat(circle.getAttribute("r") || "0");
+
+        if (r > 0) {
+            // 원을 두 개의 반원 아크로 표현
+            const pathData = `M${cx - r} ${cy} A${r} ${r} 0 0 1 ${cx + r} ${cy} A${r} ${r} 0 0 1 ${cx - r} ${cy} Z`;
+            extractedPaths.push(pathData);
+        }
+    });
+
+    // ellipse를 path로 변환
+    const ellipses = doc.querySelectorAll("ellipse");
+    ellipses.forEach((ellipse) => {
+        const cx = parseFloat(ellipse.getAttribute("cx") || "0");
+        const cy = parseFloat(ellipse.getAttribute("cy") || "0");
+        const rx = parseFloat(ellipse.getAttribute("rx") || "0");
+        const ry = parseFloat(ellipse.getAttribute("ry") || "0");
+
+        if (rx > 0 && ry > 0) {
+            const pathData = `M${cx - rx} ${cy} A${rx} ${ry} 0 0 1 ${cx + rx} ${cy} A${rx} ${ry} 0 0 1 ${cx - rx} ${cy} Z`;
+            extractedPaths.push(pathData);
+        }
+    });
+
+    // polygon을 path로 변환
+    const polygons = doc.querySelectorAll("polygon");
+    polygons.forEach((polygon) => {
+        const points = polygon.getAttribute("points");
+        if (points && points.trim()) {
+            const coords = points.trim().split(/[\s,]+/).filter(p => p.length > 0);
+            if (coords.length >= 4 && coords.length % 2 === 0) {
+                let pathData = `M${coords[0]} ${coords[1]}`;
+                for (let i = 2; i < coords.length; i += 2) {
+                    pathData += ` L${coords[i]} ${coords[i + 1]}`;
+                }
+                pathData += " Z";
+                extractedPaths.push(pathData);
+            }
+        }
+    });
+
+    // polyline을 path로 변환
+    const polylines = doc.querySelectorAll("polyline");
+    polylines.forEach((polyline) => {
+        const points = polyline.getAttribute("points");
+        if (points && points.trim()) {
+            const coords = points.trim().split(/[\s,]+/).filter(p => p.length > 0);
+            if (coords.length >= 4 && coords.length % 2 === 0) {
+                let pathData = `M${coords[0]} ${coords[1]}`;
+                for (let i = 2; i < coords.length; i += 2) {
+                    pathData += ` L${coords[i]} ${coords[i + 1]}`;
+                }
+                extractedPaths.push(pathData);
+            }
+        }
+    });
+
+    // line을 path로 변환
+    const lines = doc.querySelectorAll("line");
+    lines.forEach((line) => {
+        const x1 = parseFloat(line.getAttribute("x1") || "0");
+        const y1 = parseFloat(line.getAttribute("y1") || "0");
+        const x2 = parseFloat(line.getAttribute("x2") || "0");
+        const y2 = parseFloat(line.getAttribute("y2") || "0");
+
+        const pathData = `M${x1} ${y1} L${x2} ${y2}`;
+        extractedPaths.push(pathData);
+    });
+
+    return extractedPaths;
 }
 
 // path 명령어 최적화 함수 (중복 제거)
@@ -1763,10 +1871,12 @@ export default function Home() {
                 const content = e.target?.result as string;
                 const extractedPaths = extractPathsFromSVG(content);
                 if (extractedPaths.length > 0) {
-                    setPaths(extractedPaths);
-                    saveToHistory(extractedPaths);
+                    // 기존 경로들에 새로운 경로들을 추가
+                    const newPaths = [...paths, ...extractedPaths];
+                    setPaths(newPaths);
+                    saveToHistory(newPaths);
                     setIsNormalized(false); // 파일 업로드시 정규화 상태 해제
-                    toast.success(`SVG 파일에서 ${extractedPaths.length}개의 경로를 가져왔습니다`);
+                    toast.success(`SVG 파일에서 ${extractedPaths.length}개의 경로를 추가했습니다`);
                 } else {
                     toast.error("SVG 파일에 경로가 없습니다");
                 }
@@ -2055,7 +2165,23 @@ export default function Home() {
                                     </div>
                                 </div>
                                 <div className="path-wrap">
-                                    <textarea value={path} onChange={(e) => updatePath(index, e.target.value)} className="textarea" placeholder={`Enter SVG path ${index + 1}`} />
+                                    <div className="textarea-container">
+                                        <textarea value={path} onChange={(e) => updatePath(index, e.target.value)} className="textarea" placeholder={`Enter SVG path ${index + 1}`} />
+                                        <button 
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(path).then(() => {
+                                                    toast.success('Path가 클립보드에 복사되었습니다');
+                                                }).catch(() => {
+                                                    toast.error('복사에 실패했습니다');
+                                                });
+                                            }}
+                                            className="btn copy-btn"
+                                            title="Path 복사"
+                                            disabled={!path.trim()}
+                                        >
+                                            <Copy className="icon" size={14} />
+                                        </button>
+                                    </div>
                                     <button onClick={() => exportPathAsSVG(paths[index], index)} className="btn secondary">
                                         <Download className="icon" size={16} />
                                         내보내기
