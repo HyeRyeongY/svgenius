@@ -4,7 +4,7 @@
 import React, { useState, useRef, useEffect } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Plus, Play, Pause, RotateCcw } from "lucide-react";
-import { parseSVG, makeAbsolute } from "svg-path-parser";
+import { parseSVG, makeAbsolute, type SVGCommand } from "svg-path-parser";
 
 function reorderPathPreservingClosureStrict(path: string, startIndex: number): string {
     let commands = makeAbsolute(parseSVG(path));
