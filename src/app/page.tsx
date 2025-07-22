@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Minus, Target, Copy } from "lucide-react";
+import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Target, Copy } from "lucide-react";
 
 import Image from "next/image";
 
@@ -202,7 +202,13 @@ function extractPathsFromSVG(svgContent: string): string[] {
                 // 둥근 모서리 사각형
                 const effectiveRx = Math.min(rx || ry, width / 2);
                 const effectiveRy = Math.min(ry || rx, height / 2);
-                pathData = `M${x + effectiveRx} ${y} L${x + width - effectiveRx} ${y} Q${x + width} ${y} ${x + width} ${y + effectiveRy} L${x + width} ${y + height - effectiveRy} Q${x + width} ${y + height} ${x + width - effectiveRx} ${y + height} L${x + effectiveRx} ${y + height} Q${x} ${y + height} ${x} ${y + height - effectiveRy} L${x} ${y + effectiveRy} Q${x} ${y} ${x + effectiveRx} ${y} Z`;
+                pathData = `M${x + effectiveRx} ${y} L${x + width - effectiveRx} ${y} Q${x + width} ${y} ${
+                    x + width
+                } ${y + effectiveRy} L${x + width} ${y + height - effectiveRy} Q${x + width} ${
+                    y + height
+                } ${x + width - effectiveRx} ${y + height} L${x + effectiveRx} ${y + height} Q${x} ${
+                    y + height
+                } ${x} ${y + height - effectiveRy} L${x} ${y + effectiveRy} Q${x} ${y} ${x + effectiveRx} ${y} Z`;
             } else {
                 // 일반 사각형
                 pathData = `M${x} ${y} L${x + width} ${y} L${x + width} ${y + height} L${x} ${y + height} Z`;
@@ -234,7 +240,9 @@ function extractPathsFromSVG(svgContent: string): string[] {
         const ry = parseFloat(ellipse.getAttribute("ry") || "0");
 
         if (rx > 0 && ry > 0) {
-            const pathData = `M${cx - rx} ${cy} A${rx} ${ry} 0 0 1 ${cx + rx} ${cy} A${rx} ${ry} 0 0 1 ${cx - rx} ${cy} Z`;
+            const pathData = `M${cx - rx} ${cy} A${rx} ${ry} 0 0 1 ${cx + rx} ${cy} A${rx} ${ry} 0 0 1 ${
+                cx - rx
+            } ${cy} Z`;
             extractedPaths.push(pathData);
         }
     });
@@ -244,7 +252,10 @@ function extractPathsFromSVG(svgContent: string): string[] {
     polygons.forEach((polygon) => {
         const points = polygon.getAttribute("points");
         if (points && points.trim()) {
-            const coords = points.trim().split(/[\s,]+/).filter(p => p.length > 0);
+            const coords = points
+                .trim()
+                .split(/[\s,]+/)
+                .filter((p) => p.length > 0);
             if (coords.length >= 4 && coords.length % 2 === 0) {
                 let pathData = `M${coords[0]} ${coords[1]}`;
                 for (let i = 2; i < coords.length; i += 2) {
@@ -261,7 +272,10 @@ function extractPathsFromSVG(svgContent: string): string[] {
     polylines.forEach((polyline) => {
         const points = polyline.getAttribute("points");
         if (points && points.trim()) {
-            const coords = points.trim().split(/[\s,]+/).filter(p => p.length > 0);
+            const coords = points
+                .trim()
+                .split(/[\s,]+/)
+                .filter((p) => p.length > 0);
             if (coords.length >= 4 && coords.length % 2 === 0) {
                 let pathData = `M${coords[0]} ${coords[1]}`;
                 for (let i = 2; i < coords.length; i += 2) {
@@ -447,7 +461,17 @@ function optimizePathCommands(commands: string[]): string[] {
 
 // 베지어 곡선을 세분화하는 함수
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function subdivideCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, t: number = 0.5): { first: number[]; second: number[] } {
+function subdivideCubicBezier(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    t: number = 0.5
+): { first: number[]; second: number[] } {
     // De Casteljau's algorithm
     const x01 = x0 + (x1 - x0) * t;
     const y01 = y0 + (y1 - y0) * t;
@@ -472,7 +496,15 @@ function subdivideCubicBezier(x0: number, y0: number, x1: number, y1: number, x2
 
 // 2차 베지어 곡선을 세분화하는 함수
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
-function subdivideQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t: number = 0.5): { first: number[]; second: number[] } {
+function subdivideQuadraticBezier(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    t: number = 0.5
+): { first: number[]; second: number[] } {
     const x01 = x0 + (x1 - x0) * t;
     const y01 = y0 + (y1 - y0) * t;
     const x12 = x1 + (x2 - x1) * t;
@@ -497,7 +529,17 @@ function subdivideLine(x0: number, y0: number, x1: number, y1: number): { midX: 
 }
 
 // 베지어 곡선 상의 점을 계산하는 함수 (t는 0~1 사이 값)
-function getPointOnCubicBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, t: number): { x: number; y: number } {
+function getPointOnCubicBezier(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    t: number
+): { x: number; y: number } {
     const u = 1 - t;
     const tt = t * t;
     const uu = u * u;
@@ -511,7 +553,15 @@ function getPointOnCubicBezier(x0: number, y0: number, x1: number, y1: number, x
 }
 
 // 2차 베지어 곡선 상의 점을 계산하는 함수
-function getPointOnQuadraticBezier(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t: number): { x: number; y: number } {
+function getPointOnQuadraticBezier(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    t: number
+): { x: number; y: number } {
     const u = 1 - t;
     const x = u * u * x0 + 2 * u * t * x1 + t * t * x2;
     const y = u * u * y0 + 2 * u * t * y1 + t * t * y2;
@@ -520,7 +570,14 @@ function getPointOnQuadraticBezier(x0: number, y0: number, x1: number, y1: numbe
 }
 
 // 곡선의 실제 길이를 근사적으로 계산하는 함수
-function getCurveLength(startX: number, startY: number, endX: number, endY: number, curveType: string, controlPoints: number[]): number {
+function getCurveLength(
+    startX: number,
+    startY: number,
+    endX: number,
+    endY: number,
+    curveType: string,
+    controlPoints: number[]
+): number {
     if (curveType === "line") {
         return Math.sqrt((endX - startX) ** 2 + (endY - startY) ** 2);
     }
@@ -536,7 +593,17 @@ function getCurveLength(startX: number, startY: number, endX: number, endY: numb
         let currentX, currentY;
 
         if (curveType === "cubic") {
-            const point = getPointOnCubicBezier(startX, startY, controlPoints[0], controlPoints[1], controlPoints[2], controlPoints[3], endX, endY, t);
+            const point = getPointOnCubicBezier(
+                startX,
+                startY,
+                controlPoints[0],
+                controlPoints[1],
+                controlPoints[2],
+                controlPoints[3],
+                endX,
+                endY,
+                t
+            );
             currentX = point.x;
             currentY = point.y;
         } else if (curveType === "quadratic") {
@@ -762,7 +829,12 @@ function addSinglePointToPath(path: string): string {
                         const targetX = isAbsolute ? x : currentX + x;
                         const targetY = isAbsolute ? y : currentY + y;
 
-                        const distance = getCurveLength(startX, startY, targetX, targetY, "cubic", [cp1X, cp1Y, cp2X, cp2Y]);
+                        const distance = getCurveLength(startX, startY, targetX, targetY, "cubic", [
+                            cp1X,
+                            cp1Y,
+                            cp2X,
+                            cp2Y,
+                        ]);
                         segments.push({
                             command: cmd,
                             startX: startX,
@@ -868,7 +940,11 @@ function addSinglePointToPath(path: string): string {
         segments.sort((a, b) => b.distance - a.distance);
         const longestSegment = segments[0];
 
-        console.log(`Adding point to ${longestSegment.curveType} segment at index ${longestSegment.index}, distance: ${longestSegment.distance.toFixed(2)}`);
+        console.log(
+            `Adding point to ${longestSegment.curveType} segment at index ${
+                longestSegment.index
+            }, distance: ${longestSegment.distance.toFixed(2)}`
+        );
 
         // 해당 명령어를 보간된 점으로 분할
         const newCommands = [...commands];
@@ -886,12 +962,30 @@ function addSinglePointToPath(path: string): string {
             midY = (longestSegment.startY + longestSegment.endY) / 2;
         } else if (longestSegment.curveType === "cubic") {
             // 3차 베지어 곡선 위의 t=0.5 지점
-            const midPoint = getPointOnCubicBezier(longestSegment.startX, longestSegment.startY, longestSegment.controlPoints[0], longestSegment.controlPoints[1], longestSegment.controlPoints[2], longestSegment.controlPoints[3], longestSegment.endX, longestSegment.endY, 0.5);
+            const midPoint = getPointOnCubicBezier(
+                longestSegment.startX,
+                longestSegment.startY,
+                longestSegment.controlPoints[0],
+                longestSegment.controlPoints[1],
+                longestSegment.controlPoints[2],
+                longestSegment.controlPoints[3],
+                longestSegment.endX,
+                longestSegment.endY,
+                0.5
+            );
             midX = midPoint.x;
             midY = midPoint.y;
         } else if (longestSegment.curveType === "quadratic") {
             // 2차 베지어 곡선 위의 t=0.5 지점
-            const midPoint = getPointOnQuadraticBezier(longestSegment.startX, longestSegment.startY, longestSegment.controlPoints[0], longestSegment.controlPoints[1], longestSegment.endX, longestSegment.endY, 0.5);
+            const midPoint = getPointOnQuadraticBezier(
+                longestSegment.startX,
+                longestSegment.startY,
+                longestSegment.controlPoints[0],
+                longestSegment.controlPoints[1],
+                longestSegment.endX,
+                longestSegment.endY,
+                0.5
+            );
             midX = midPoint.x;
             midY = midPoint.y;
         } else {
@@ -1002,7 +1096,12 @@ function normalizePathPreservingCurves(path: string, targetPointCount: number): 
                         newCommands.push(...subdividedCommands);
                     } else if (segment.pointsToAdd > 0 && !segment.isCurve) {
                         // 직선인 경우: 중간점들을 추가
-                        const intermediatePoints = createIntermediatePoints(cmd, currentX, currentY, segment.pointsToAdd);
+                        const intermediatePoints = createIntermediatePoints(
+                            cmd,
+                            currentX,
+                            currentY,
+                            segment.pointsToAdd
+                        );
                         newCommands.push(...intermediatePoints);
                     } else {
                         // 포인트를 추가하지 않는 경우 원본 명령어 유지
@@ -1207,8 +1306,21 @@ function subdivideCommand(cmd: string, currentX: number, currentY: number, subdi
             const t1 = i / segments;
             const t2 = (i + 1) / segments;
 
-            const subdivided = subdivideCubicBezierRange(currentX, currentY, cp1X, cp1Y, cp2X, cp2Y, endX, endY, t1, t2);
-            parts.push(`C ${subdivided[2]} ${subdivided[3]} ${subdivided[4]} ${subdivided[5]} ${subdivided[6]} ${subdivided[7]}`);
+            const subdivided = subdivideCubicBezierRange(
+                currentX,
+                currentY,
+                cp1X,
+                cp1Y,
+                cp2X,
+                cp2Y,
+                endX,
+                endY,
+                t1,
+                t2
+            );
+            parts.push(
+                `C ${subdivided[2]} ${subdivided[3]} ${subdivided[4]} ${subdivided[5]} ${subdivided[6]} ${subdivided[7]}`
+            );
         }
 
         return parts;
@@ -1260,7 +1372,18 @@ function createIntermediatePoints(cmd: string, currentX: number, currentY: numbe
 }
 
 // 베지어 곡선의 특정 구간을 추출하는 함수
-function subdivideCubicBezierRange(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, x3: number, y3: number, t1: number, t2: number): number[] {
+function subdivideCubicBezierRange(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    x3: number,
+    y3: number,
+    t1: number,
+    t2: number
+): number[] {
     // t1에서 t2까지의 구간을 추출
     const point1 = getPointOnCubicBezier(x0, y0, x1, y1, x2, y2, x3, y3, t1);
     const point2 = getPointOnCubicBezier(x0, y0, x1, y1, x2, y2, x3, y3, t2);
@@ -1275,7 +1398,16 @@ function subdivideCubicBezierRange(x0: number, y0: number, x1: number, y1: numbe
 }
 
 // 2차 베지어 곡선의 특정 구간을 추출하는 함수
-function subdivideQuadraticBezierRange(x0: number, y0: number, x1: number, y1: number, x2: number, y2: number, t1: number, t2: number): number[] {
+function subdivideQuadraticBezierRange(
+    x0: number,
+    y0: number,
+    x1: number,
+    y1: number,
+    x2: number,
+    y2: number,
+    t1: number,
+    t2: number
+): number[] {
     const point1 = getPointOnQuadraticBezier(x0, y0, x1, y1, x2, y2, t1);
     const point2 = getPointOnQuadraticBezier(x0, y0, x1, y1, x2, y2, t2);
 
@@ -1300,7 +1432,6 @@ function calculateTotalPathLength(path: string): number {
             const params = cmd.substring(1).trim();
             const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
             const isAbsolute = cmdType === cmdType.toUpperCase();
-
 
             switch (cmdType.toUpperCase()) {
                 case "M":
@@ -1355,7 +1486,12 @@ function calculateTotalPathLength(path: string): number {
                         const targetX = isAbsolute ? x : currentX + x;
                         const targetY = isAbsolute ? y : currentY + y;
 
-                        totalLength += getCurveLength(currentX, currentY, targetX, targetY, "cubic", [cp1X, cp1Y, cp2X, cp2Y]);
+                        totalLength += getCurveLength(currentX, currentY, targetX, targetY, "cubic", [
+                            cp1X,
+                            cp1Y,
+                            cp2X,
+                            cp2Y,
+                        ]);
 
                         currentX = targetX;
                         currentY = targetY;
@@ -1417,7 +1553,6 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
             const params = cmd.substring(1).trim();
             const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
             const isAbsolute = cmdType === cmdType.toUpperCase();
-
 
             switch (cmdType.toUpperCase()) {
                 case "M":
@@ -1725,7 +1860,11 @@ function reorderPathSafely(path: string, startIndex: number): string {
 
         // 시작점 이전 명령어들을 원본 그대로 추가 (단, M->L 변환)
         // 시작점이 곡선이 아닌 경우에만 startIndex 포함, 곡선인 경우는 완전히 건너뛰고 마지막에 추가
-        const isStartCurve = startCommandType.toUpperCase() !== "M" && startCommandType.toUpperCase() !== "L" && startCommandType.toUpperCase() !== "H" && startCommandType.toUpperCase() !== "V";
+        const isStartCurve =
+            startCommandType.toUpperCase() !== "M" &&
+            startCommandType.toUpperCase() !== "L" &&
+            startCommandType.toUpperCase() !== "H" &&
+            startCommandType.toUpperCase() !== "V";
 
         for (let i = 0; i < startIndex; i++) {
             const cmdInfo = commandEndPoints[i];
@@ -1779,8 +1918,14 @@ function reorderPathSafely(path: string, startIndex: number): string {
 }
 
 export default function Home() {
-    const [paths, setPaths] = useState<string[]>(["M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z"]);
-    const [pathHistory, setPathHistory] = useState<string[][]>([["M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z"]]);
+    const [paths, setPaths] = useState<string[]>([
+        "M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z",
+    ]);
+    const [pathHistory, setPathHistory] = useState<string[][]>([
+        [
+            "M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z",
+        ],
+    ]);
     const [historyIndex, setHistoryIndex] = useState(0);
     const [isNormalized, setIsNormalized] = useState(false); // 정규화 상태 추적
     const [t, setT] = useState(0);
@@ -1794,6 +1939,11 @@ export default function Home() {
 
     // 히스토리에 현재 상태 저장
     const saveToHistory = (newPaths: string[]) => {
+        if (!Array.isArray(newPaths)) {
+            console.warn("saveToHistory: newPaths is not an array", newPaths);
+            return;
+        }
+
         const newHistory = pathHistory.slice(0, historyIndex + 1);
         newHistory.push([...newPaths]);
         setPathHistory(newHistory);
@@ -1802,21 +1952,27 @@ export default function Home() {
 
     // 되돌리기
     const undo = useCallback(() => {
-        if (historyIndex > 0) {
+        if (historyIndex > 0 && pathHistory.length > 0) {
             const newIndex = historyIndex - 1;
-            setHistoryIndex(newIndex);
-            setPaths([...pathHistory[newIndex]]);
-            setIsNormalized(false); // undo시 정규화 상태 해제
+            const targetHistory = pathHistory[newIndex];
+            if (targetHistory && Array.isArray(targetHistory)) {
+                setHistoryIndex(newIndex);
+                setPaths([...targetHistory]);
+                setIsNormalized(false); // undo시 정규화 상태 해제
+            }
         }
     }, [historyIndex, pathHistory]);
 
     // 다시 실행
     const redo = useCallback(() => {
-        if (historyIndex < pathHistory.length - 1) {
+        if (historyIndex < pathHistory.length - 1 && pathHistory.length > 0) {
             const newIndex = historyIndex + 1;
-            setHistoryIndex(newIndex);
-            setPaths([...pathHistory[newIndex]]);
-            setIsNormalized(false); // redo시 정규화 상태 해제
+            const targetHistory = pathHistory[newIndex];
+            if (targetHistory && Array.isArray(targetHistory)) {
+                setHistoryIndex(newIndex);
+                setPaths([...targetHistory]);
+                setIsNormalized(false); // redo시 정규화 상태 해제
+            }
         }
     }, [historyIndex, pathHistory]);
 
@@ -2104,18 +2260,44 @@ export default function Home() {
                 <section className="panel left">
                     <div className="section import-section">
                         <h2 className="section-title">
-                            <Upload className="icon" size={16} /> SVG 가져오기
+                            <Upload className="icon" size={14} /> SVG 가져오기
                         </h2>
                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".svg" hidden />
                         <button onClick={() => fileInputRef.current?.click()} className="btn full">
-                            <Upload className="icon" size={16} /> SVG 파일 선택
+                            <Upload className="icon" size={14} /> SVG 파일 선택
                         </button>
                     </div>
 
-                    <div className="section">
+                    <div className="section path-editor">
                         <div className="section-header">
-                            <h2 className="section-title">Path 편집기</h2>
-                            <span className="chip">{paths.length} paths</span>
+                            <div className="section-title-wrap">
+                                <h2 className="section-title">Path 편집기</h2>
+                                <span className="chip">{paths.length} Paths</span>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    const normalized = normalizeAllPaths(paths);
+                                    setPaths(normalized);
+                                    saveToHistory(normalized);
+                                    setIsNormalized(true); // 정규화 완료 상태로 설정
+                                    toast.success("모든 경로의 포인트 수를 맞췄습니다");
+                                }}
+                                className="btn small primary"
+                                disabled={(() => {
+                                    // 유효한 경로들만 필터링 (빈 문자열이 아닌 경로)
+                                    const validPaths = paths.filter((path) => path.trim().length > 0);
+                                    return validPaths.length < 2;
+                                })()}
+                                title={(() => {
+                                    const validPaths = paths.filter((path) => path.trim().length > 0);
+                                    if (validPaths.length < 2) {
+                                        return "내용이 있는 경로가 2개 이상 필요합니다";
+                                    }
+                                    return "모든 경로의 포인트 수를 최대값으로 정규화";
+                                })()}
+                            >
+                                Points 정규화
+                            </button>
                         </div>
 
                         {paths.map((path, index) => (
@@ -2126,7 +2308,9 @@ export default function Home() {
                                         {(() => {
                                             // 정규화 상태를 확인하는 조건들
                                             const hasValidPath = path.trim().length > 0;
-                                            const allPointCounts = paths.filter((p) => p.trim().length > 0).map((p) => getAnchorPoints(p).length);
+                                            const allPointCounts = paths
+                                                .filter((p) => p.trim().length > 0)
+                                                .map((p) => getAnchorPoints(p).length);
                                             const maxPoints = Math.max(...allPointCounts);
                                             const currentPoints = getAnchorPoints(path).length;
                                             const validPaths = paths.filter((p) => p.trim().length > 0);
@@ -2136,7 +2320,12 @@ export default function Home() {
                                             // 2. 유효한 경로가 2개 이상 있어야 함
                                             // 3. 현재 경로가 유효해야 함
                                             // 4. 현재 경로의 포인트 수가 최대값과 같아야 함
-                                            const shouldShowNormalized = isNormalized && validPaths.length > 1 && hasValidPath && currentPoints === maxPoints && currentPoints > 0;
+                                            const shouldShowNormalized =
+                                                isNormalized &&
+                                                validPaths.length > 1 &&
+                                                hasValidPath &&
+                                                currentPoints === maxPoints &&
+                                                currentPoints > 0;
 
                                             return (
                                                 <span className={`chip ${shouldShowNormalized ? "normalized" : ""}`}>
@@ -2147,8 +2336,11 @@ export default function Home() {
                                     </label>
                                     <div className="button-wrap">
                                         {paths.length > 1 && (
-                                            <button onClick={() => removePath(index)} className="btn danger" title="경로 삭제">
-                                                <Minus className="icon" size={16} />
+                                            <button
+                                                onClick={() => removePath(index)}
+                                                className="btn danger"
+                                                title="경로 삭제"
+                                            >
                                                 <span>삭제</span>
                                             </button>
                                         )}
@@ -2160,20 +2352,32 @@ export default function Home() {
                                             title={previewIndex === index ? "미리보기 끄기" : "미리보기 켜기"}
                                         >
                                             <span>미리보기</span>
-                                            {previewIndex === index ? <Play className="icon" size={16} /> : <Square className="icon" size={16} />}
+                                            {previewIndex === index ? (
+                                                <Play className="icon" size={14} />
+                                            ) : (
+                                                <Square className="icon" size={14} />
+                                            )}
                                         </button>
                                     </div>
                                 </div>
                                 <div className="path-wrap">
                                     <div className="textarea-container">
-                                        <textarea value={path} onChange={(e) => updatePath(index, e.target.value)} className="textarea" placeholder={`Enter SVG path ${index + 1}`} />
-                                        <button 
+                                        <textarea
+                                            value={path}
+                                            onChange={(e) => updatePath(index, e.target.value)}
+                                            className="textarea"
+                                            placeholder={`Enter SVG path ${index + 1}`}
+                                        />
+                                        <button
                                             onClick={() => {
-                                                navigator.clipboard.writeText(path).then(() => {
-                                                    toast.success('Path가 클립보드에 복사되었습니다');
-                                                }).catch(() => {
-                                                    toast.error('복사에 실패했습니다');
-                                                });
+                                                navigator.clipboard
+                                                    .writeText(path)
+                                                    .then(() => {
+                                                        toast.success("Path가 클립보드에 복사되었습니다");
+                                                    })
+                                                    .catch(() => {
+                                                        toast.error("복사에 실패했습니다");
+                                                    });
                                             }}
                                             className="btn copy-btn"
                                             title="Path 복사"
@@ -2182,42 +2386,19 @@ export default function Home() {
                                             <Copy className="icon" size={14} />
                                         </button>
                                     </div>
-                                    <button onClick={() => exportPathAsSVG(paths[index], index)} className="btn secondary">
-                                        <Download className="icon" size={16} />
+                                    <button
+                                        onClick={() => exportPathAsSVG(paths[index], index)}
+                                        className="btn secondary"
+                                    >
+                                        <Download className="icon" size={14} />
                                         내보내기
                                     </button>
                                 </div>
                             </div>
                         ))}
-                        <div className="button-row">
-                            <button onClick={addNewPath} className="btn text">
-                                <Plus className="icon" size={16} /> 새 경로 추가
-                            </button>
-                            <button
-                                onClick={() => {
-                                    const normalized = normalizeAllPaths(paths);
-                                    setPaths(normalized);
-                                    saveToHistory(normalized);
-                                    setIsNormalized(true); // 정규화 완료 상태로 설정
-                                    toast.success("모든 경로의 포인트 수를 맞췄습니다");
-                                }}
-                                className="btn secondary"
-                                disabled={(() => {
-                                    // 유효한 경로들만 필터링 (빈 문자열이 아닌 경로)
-                                    const validPaths = paths.filter(path => path.trim().length > 0);
-                                    return validPaths.length < 2;
-                                })()}
-                                title={(() => {
-                                    const validPaths = paths.filter(path => path.trim().length > 0);
-                                    if (validPaths.length < 2) {
-                                        return "내용이 있는 경로가 2개 이상 필요합니다";
-                                    }
-                                    return "모든 경로의 포인트 수를 최대값으로 맞춤";
-                                })()}
-                            >
-                                <Target className="icon" size={16} /> 포인트 수 맞추기
-                            </button>
-                        </div>
+                        <button onClick={addNewPath} className="btn text">
+                            <Plus className="icon" size={14} /> 새 경로 추가
+                        </button>
                     </div>
 
                     <div className="section animation-section">
@@ -2226,27 +2407,44 @@ export default function Home() {
                             <label className="label">
                                 모핑 진행률 <span>{Math.round(t * 100)}%</span>
                             </label>
-                            <input type="range" min={0} max={1} step={0.01} value={t} onChange={(e) => setT(parseFloat(e.target.value))} />
+                            <input
+                                type="range"
+                                min={0}
+                                max={1}
+                                step={0.01}
+                                value={t}
+                                onChange={(e) => setT(parseFloat(e.target.value))}
+                            />
                         </div>
                         <div className="control-group">
                             <label className="label">애니메이션 속도</label>
-                            <input type="range" min={0.5} max={5} step={0.1} value={animationSpeed} onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))} />
+                            <input
+                                type="range"
+                                min={0.5}
+                                max={5}
+                                step={0.1}
+                                value={animationSpeed}
+                                onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+                            />
                             <span>{animationSpeed.toFixed(1)}x</span>
                         </div>
                         <div className="button-row">
-                            <button onClick={toggleAnimation} className={`btn ${isAnimating ? "secondary" : "primary"}`}>
+                            <button
+                                onClick={toggleAnimation}
+                                className={`btn ${isAnimating ? "secondary" : "primary"}`}
+                            >
                                 {isAnimating ? (
                                     <>
-                                        <Pause className="icon" size={16} /> 일시정지
+                                        <Pause className="icon" size={14} /> 일시정지
                                     </>
                                 ) : (
                                     <>
-                                        <Play className="icon" size={16} /> 재생
+                                        <Play className="icon" size={14} /> 재생
                                     </>
                                 )}
                             </button>
                             <button onClick={resetAnimation} className="btn small">
-                                <RotateCcw className="icon" size={16} />
+                                <RotateCcw className="icon" size={14} />
                             </button>
                         </div>
                     </div>
@@ -2256,11 +2454,15 @@ export default function Home() {
                     <div className="section preview-section">
                         <div className="section-header">
                             <h2 className="section-title">미리보기</h2>
-                            <div className="chip-wrap">
+                        </div>
+                        {/* 현재 Path 정보 */}
+                        {previewIndex !== null && (
+                            <div className="path-info">
+                                <div className="path-info-title">Path {previewIndex + 1}</div>
                                 <span className="chip">{anchorPoints.length} Points</span>
                                 <span className="chip">{currentPath.length} Characters</span>
                             </div>
-                        </div>
+                        )}
                         <div className="preview-container">
                             {/* 포인트 리스트 */}
                             <div className="point-list">
@@ -2268,7 +2470,14 @@ export default function Home() {
                                 <div className="point-items">
                                     {anchorPoints.length > 0 ? (
                                         anchorPoints.map((pt, i) => (
-                                            <button key={i} className={`point-item ${i === selectedIndex ? "selected" : ""} ${i === currentStartIndex ? "start" : ""}`} onClick={() => setSelectedIndex(i)} title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}>
+                                            <button
+                                                key={i}
+                                                className={`point-item ${i === selectedIndex ? "selected" : ""} ${
+                                                    i === currentStartIndex ? "start" : ""
+                                                }`}
+                                                onClick={() => setSelectedIndex(i)}
+                                                title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
+                                            >
                                                 <span className="point-number">{i}</span>
                                                 <span className="point-coords">
                                                     x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
@@ -2288,9 +2497,40 @@ export default function Home() {
                                         <>
                                             <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
                                             {anchorPoints.map((pt, i) => (
-                                                <g key={i} style={{ cursor: "pointer" }} onClick={() => setSelectedIndex(i)}>
-                                                    <circle cx={pt.x} cy={pt.y} r={4} fill={i === selectedIndex ? "#FF4D47" : i === currentStartIndex ? "#FFBB00" : "#666"} stroke="#fff" strokeWidth={1} />
-                                                    <text x={pt.x} y={pt.y - 8} textAnchor="middle" fontSize="10" fill={i === selectedIndex ? "#FF4D47" : i === currentStartIndex ? "#FFBB00" : "#ddd"} fontWeight="bold" style={{ pointerEvents: "none" }}>
+                                                <g
+                                                    key={i}
+                                                    style={{ cursor: "pointer" }}
+                                                    onClick={() => setSelectedIndex(i)}
+                                                >
+                                                    <circle
+                                                        cx={pt.x}
+                                                        cy={pt.y}
+                                                        r={4}
+                                                        fill={
+                                                            i === selectedIndex
+                                                                ? "#FF4D47"
+                                                                : i === currentStartIndex
+                                                                  ? "#FFBB00"
+                                                                  : "#666"
+                                                        }
+                                                        stroke="#fff"
+                                                        strokeWidth={1}
+                                                    />
+                                                    <text
+                                                        x={pt.x}
+                                                        y={pt.y - 8}
+                                                        textAnchor="middle"
+                                                        fontSize="10"
+                                                        fill={
+                                                            i === selectedIndex
+                                                                ? "#FF4D47"
+                                                                : i === currentStartIndex
+                                                                  ? "#FFBB00"
+                                                                  : "#ddd"
+                                                        }
+                                                        fontWeight="bold"
+                                                        style={{ pointerEvents: "none" }}
+                                                    >
                                                         {i}
                                                     </text>
                                                 </g>
@@ -2304,16 +2544,30 @@ export default function Home() {
                                 </svg>
                             </div>
                         </div>
-                        <button className="btn primary" onClick={handleSetStartPoint} disabled={selectedIndex === null}>
-                            <Target className="icon" size={16} />
-                            시작점 설정
-                        </button>
                         <div className="button-row">
-                            <button onClick={undo} disabled={historyIndex <= 0} className={`btn secondary ${historyIndex <= 0 ? "disabled" : ""}`} title="되돌리기 (Ctrl+Z)">
-                                <Undo2 className="icon" size={16} /> 되돌리기
+                            <button
+                                onClick={undo}
+                                disabled={historyIndex <= 0}
+                                className={`btn secondary small ${historyIndex <= 0 ? "disabled" : ""}`}
+                                title="되돌리기 (Ctrl+Z)"
+                            >
+                                <Undo2 className="icon" size={14} />
                             </button>
-                            <button onClick={redo} disabled={historyIndex >= pathHistory.length - 1} className={`btn secondary ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`} title="다시실행 (Ctrl+Shift+Z)">
-                                <Redo2 className="icon" size={16} /> 다시실행
+                            <button
+                                onClick={redo}
+                                disabled={historyIndex >= pathHistory.length - 1}
+                                className={`btn secondary small ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
+                                title="다시실행 (Ctrl+Shift+Z)"
+                            >
+                                <Redo2 className="icon" size={14} />
+                            </button>
+                            <button
+                                className="btn primary full"
+                                onClick={handleSetStartPoint}
+                                disabled={selectedIndex === null}
+                            >
+                                <Target className="icon" size={14} />
+                                시작점 설정
                             </button>
                         </div>
                     </div>
