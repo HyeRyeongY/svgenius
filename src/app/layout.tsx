@@ -6,8 +6,8 @@ import type { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "SVGenius",
-    description: "Transform your SVG paths with intelligence. Advanced path morphing, real-time preview, and powerful tools for SVG manipulation.",
-    keywords: ["SVG", "path manipulation", "morphing", "animation", "design tools", "vector graphics"],
+    description: "Perfect SVG morphing starts here.",
+    keywords: ["SVG", "path manipulation", "morphing", "animation", "vector graphics", "svg morphing", "svg path editor", "svg path start point redefinition", "svg path reordering"],
     authors: [{ name: "yoonhr" }],
     creator: "SVGenius",
     publisher: "SVGenius",
@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     },
     openGraph: {
         title: "SVGenius",
-        description: "Transform your SVG paths with intelligence. Advanced path morphing, real-time preview, and powerful tools for SVG manipulation.",
+        description: "Perfect SVG morphing starts here.",
         url: "https://svgenius.gnyng.com",
         siteName: "SVGenius",
         images: [
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     twitter: {
         card: "summary_large_image",
         title: "SVGenius",
-        description: "Transform your SVG paths with intelligence. Advanced path morphing, real-time preview, and powerful tools for SVG manipulation.",
+        description: "Perfect SVG morphing starts here.",
         images: ["/og.jpg"],
         creator: "@svgenius",
     },
@@ -54,11 +54,11 @@ export const metadata: Metadata = {
             "max-snippet": -1,
         },
     },
-    verification: {
-        google: "your-google-verification-code",
-        yandex: "your-yandex-verification-code",
-        yahoo: "your-yahoo-verification-code",
-    },
+    // verification: {
+    //     google: "your-google-verification-code",
+    //     yandex: "your-yandex-verification-code",
+    //     yahoo: "your-yahoo-verification-code",
+    // },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

@@ -2255,7 +2255,7 @@ export default function Home() {
                     <Image src="/SVGenius.svg" alt="SVGenius Logo" width={32} height={32} />
                     <h1 className="title">SVGenius</h1>
                 </div>
-                <p className="subtitle">Smart morphing. Genius level SVG path manipulation.</p>
+                <p className="subtitle">Perfect SVG morphing starts here.</p>
             </header>
 
             <main className="main">
