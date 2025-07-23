@@ -1,5 +1,5 @@
+@charset "UTF-8";
 /* styles/_reset.scss */
-
 /* 박스 모델 초기화 */
 *,
 *::before,
@@ -162,49 +162,41 @@ hr {
     font-size: 9.75px;
   }
 }
-
 @media (max-width: 1400px) {
   html {
     font-size: 9.5px;
   }
 }
-
 @media (max-width: 1280px) {
   html {
     font-size: 9.25px;
   }
 }
-
 @media (max-width: 1024px) {
   html {
     font-size: 9px;
   }
 }
-
 @media (max-width: 768px) {
   html {
     font-size: 8.75px;
   }
 }
-
 @media (max-width: 640px) {
   html {
     font-size: 8.5px;
   }
 }
-
 @media (max-width: 400px) {
   html {
     font-size: 8.25px;
   }
 }
-
 @media (max-width: 320px) {
   html {
     font-size: 8px;
   }
 }
-
 /* 접근성 개선: 애니메이션 감소 설정을 선호하는 사용자 */
 @media (prefers-reduced-motion: reduce) {
   *,
