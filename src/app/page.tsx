@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Target, Copy } from "lucide-react";
+import { gsap } from "gsap";
 
 import Image from "next/image";
 
@@ -1917,45 +1918,115 @@ function reorderPathSafely(path: string, startIndex: number): string {
     }
 }
 
+// SVG path 명령어 파싱 (곡선 정보 포함)
+function parsePathCommands(path: string) {
+    const commands = [];
+    const commandRegex = /([MmLlHhVvCcSsQqTtAaZz])((?:\s*[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)\s*,?\s*)*)/g;
+    let match;
 
+    while ((match = commandRegex.exec(path)) !== null) {
+        const [, command, params] = match;
+        const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+        commands.push({
+            command: command,
+            params: numbers.map(Number),
+        });
+    }
 
+    return commands;
+}
 
-
-
-// SVG path 간 보간을 위한 함수
+// GSAP 기반 SVG path 보간 함수 (곡선 지원)
 function interpolatePaths(path1: string, path2: string, t: number): string {
     try {
-        const points1 = getAnchorPoints(path1);
-        const points2 = getAnchorPoints(path2);
-        
-        // 포인트 수가 다르면 보간할 수 없음
-        if (points1.length !== points2.length) {
+        const commands1 = parsePathCommands(path1);
+        const commands2 = parsePathCommands(path2);
+
+        // 명령어 수가 다르면 보간할 수 없음
+        if (commands1.length !== commands2.length) {
             return t < 0.5 ? path1 : path2;
         }
-        
-        // 각 포인트를 보간
-        const interpolatedPoints = points1.map((p1, i) => {
-            const p2 = points2[i];
-            return {
-                x: p1.x + (p2.x - p1.x) * t,
-                y: p1.y + (p2.y - p1.y) * t,
-                index: i
-            };
-        });
-        
-        // 보간된 포인트들로 새로운 경로 생성 (간단한 직선 연결)
-        if (interpolatedPoints.length === 0) return path1;
-        
-        let result = `M ${interpolatedPoints[0].x.toFixed(3)} ${interpolatedPoints[0].y.toFixed(3)}`;
-        
-        for (let i = 1; i < interpolatedPoints.length; i++) {
-            const point = interpolatedPoints[i];
-            result += ` L ${point.x.toFixed(3)} ${point.y.toFixed(3)}`;
+
+        // GSAP의 부드러운 보간을 사용
+        const easedT = gsap.parseEase("power2.inOut")(t);
+
+        let result = "";
+        let currentX = 0,
+            currentY = 0;
+
+        for (let i = 0; i < commands1.length; i++) {
+            const cmd1 = commands1[i];
+            const cmd2 = commands2[i];
+
+            // 명령어 타입이 다르면 보간할 수 없음
+            if (cmd1.command !== cmd2.command) {
+                return t < 0.5 ? path1 : path2;
+            }
+
+            // 파라미터 수가 다르면 보간할 수 없음
+            if (cmd1.params.length !== cmd2.params.length) {
+                return t < 0.5 ? path1 : path2;
+            }
+
+            // 명령어 추가
+            result += cmd1.command;
+
+            // 각 파라미터를 보간
+            const interpolatedParams = cmd1.params.map((param1, j) => {
+                const param2 = cmd2.params[j];
+                return gsap.utils.interpolate(param1, param2, easedT);
+            });
+
+            // 파라미터 추가
+            if (interpolatedParams.length > 0) {
+                result += " " + interpolatedParams.map((p) => p.toFixed(3)).join(" ");
+            }
+
+            // 현재 위치 업데이트 (절대 좌표 기준)
+            const command = cmd1.command.toUpperCase();
+            const isRelative = cmd1.command !== cmd1.command.toUpperCase();
+
+            switch (command) {
+                case "M":
+                case "L":
+                    if (interpolatedParams.length >= 2) {
+                        if (isRelative) {
+                            currentX += interpolatedParams[0];
+                            currentY += interpolatedParams[1];
+                        } else {
+                            currentX = interpolatedParams[0];
+                            currentY = interpolatedParams[1];
+                        }
+                    }
+                    break;
+                case "C":
+                    if (interpolatedParams.length >= 6) {
+                        if (isRelative) {
+                            currentX += interpolatedParams[4];
+                            currentY += interpolatedParams[5];
+                        } else {
+                            currentX = interpolatedParams[4];
+                            currentY = interpolatedParams[5];
+                        }
+                    }
+                    break;
+                case "Q":
+                    if (interpolatedParams.length >= 4) {
+                        if (isRelative) {
+                            currentX += interpolatedParams[2];
+                            currentY += interpolatedParams[3];
+                        } else {
+                            currentX = interpolatedParams[2];
+                            currentY = interpolatedParams[3];
+                        }
+                    }
+                    break;
+            }
+
+            result += " ";
         }
-        
-        result += " Z";
-        return result;
-        
+
+        return result.trim();
     } catch (error) {
         console.warn("Path interpolation failed:", error);
         return t < 0.5 ? path1 : path2;
@@ -1979,11 +2050,12 @@ export default function Home() {
     const [previewIndex, setPreviewIndex] = useState<number | null>(0);
     const [morphingFromIndex, setMorphingFromIndex] = useState<number>(0);
     const [morphingToIndex, setMorphingToIndex] = useState<number>(1);
+    const [isAnimationMode, setIsAnimationMode] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
-    const animationRef = useRef<number | undefined>(undefined);
+    const timelineRef = useRef<gsap.core.Timeline | null>(null);
 
     const currentPath = previewIndex != null ? paths[previewIndex] : "";
-    
+
     // Morphing을 위한 계산된 경로
     const morphingPath = useMemo(() => {
         if (paths.length >= 2 && morphingFromIndex < paths.length && morphingToIndex < paths.length) {
@@ -1993,17 +2065,20 @@ export default function Home() {
     }, [paths, morphingFromIndex, morphingToIndex, t]);
 
     // 히스토리에 현재 상태 저장
-    const saveToHistory = useCallback((newPaths: string[]) => {
-        if (!Array.isArray(newPaths)) {
-            console.warn("saveToHistory: newPaths is not an array", newPaths);
-            return;
-        }
+    const saveToHistory = useCallback(
+        (newPaths: string[]) => {
+            if (!Array.isArray(newPaths)) {
+                console.warn("saveToHistory: newPaths is not an array", newPaths);
+                return;
+            }
 
-        const newHistory = pathHistory.slice(0, historyIndex + 1);
-        newHistory.push([...newPaths]);
-        setPathHistory(newHistory);
-        setHistoryIndex(newHistory.length - 1);
-    }, [pathHistory, historyIndex]);
+            const newHistory = pathHistory.slice(0, historyIndex + 1);
+            newHistory.push([...newPaths]);
+            setPathHistory(newHistory);
+            setHistoryIndex(newHistory.length - 1);
+        },
+        [pathHistory, historyIndex]
+    );
 
     // 되돌리기
     const undo = useCallback(() => {
@@ -2074,6 +2149,29 @@ export default function Home() {
         }
     };
 
+    const createMorphingTimeline = useCallback(() => {
+        if (timelineRef.current) {
+            timelineRef.current.kill();
+        }
+
+        timelineRef.current = gsap.timeline({
+            repeat: -1,
+            ease: "power2.inOut",
+            onUpdate: () => {
+                const progress = timelineRef.current?.progress() || 0;
+                setT(progress);
+            },
+        });
+
+        timelineRef.current.to(
+            { value: 1 },
+            {
+                duration: 2 / animationSpeed,
+                ease: "power2.inOut",
+            }
+        );
+    }, [animationSpeed]);
+
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
         const file = event.target.files?.[0];
         if (file && file.type === "image/svg+xml") {
@@ -2101,46 +2199,51 @@ export default function Home() {
     const toggleAnimation = () => {
         if (isAnimating) {
             setIsAnimating(false);
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
+            if (timelineRef.current) {
+                timelineRef.current.pause();
             }
         } else {
             setIsAnimating(true);
+            // GSAP timeline 생성 및 시작
+            if (timelineRef.current) {
+                timelineRef.current.resume();
+            } else {
+                createMorphingTimeline();
+            }
         }
     };
 
     const resetAnimation = () => {
         setT(0);
         setIsAnimating(false);
-        if (animationRef.current) {
-            cancelAnimationFrame(animationRef.current);
+        if (timelineRef.current) {
+            timelineRef.current.pause();
+            timelineRef.current.progress(0);
         }
     };
 
+    // GSAP timeline 업데이트 및 클린업
     useEffect(() => {
-        if (isAnimating) {
-            const animate = () => {
-                setT((prev) => {
-                    const next = prev + animationSpeed / 1000;
-                    return next > 1 ? 0 : next;
-                });
-                animationRef.current = requestAnimationFrame(animate);
-            };
-            animationRef.current = requestAnimationFrame(animate);
+        if (isAnimating && !timelineRef.current) {
+            createMorphingTimeline();
+        } else if (timelineRef.current) {
+            // 애니메이션 속도 변경 시 timeline duration 업데이트
+            timelineRef.current.duration(2 / animationSpeed);
         }
 
         return () => {
-            if (animationRef.current) {
-                cancelAnimationFrame(animationRef.current);
+            if (timelineRef.current) {
+                timelineRef.current.kill();
+                timelineRef.current = null;
             }
         };
-    }, [isAnimating, animationSpeed]);
+    }, [isAnimating, animationSpeed, createMorphingTimeline]);
 
     // 앵커 수정
     const [anchorPoints, setAnchorPoints] = useState<AnchorPoint[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [currentStartIndex, setCurrentStartIndex] = useState<number>(0);
-    
+
     // 드래그 기능
     const [isDragging, setIsDragging] = useState(false);
     const [dragIndex, setDragIndex] = useState<number | null>(null);
@@ -2148,7 +2251,7 @@ export default function Home() {
     const [mouseDownPos, setMouseDownPos] = useState<{ x: number; y: number } | null>(null);
     const [isMouseDown, setIsMouseDown] = useState(false);
     const svgRef = useRef<SVGSVGElement>(null);
-    
+
     useEffect(() => {
         if (currentPath && currentPath.trim()) {
             const points = getAnchorPoints(currentPath);
@@ -2165,28 +2268,27 @@ export default function Home() {
 
         const handleGlobalMouseMove = (e: MouseEvent) => {
             if (!svgRef.current || dragIndex === null || previewIndex === null) return;
-            
+
             const mousePos = getMousePositionFromEvent(e);
-            
+
             // 마우스가 눌린 상태에서 일정 거리 이상 이동하면 드래그 시작
             if (isMouseDown && !isDragging && mouseDownPos) {
                 const distance = Math.sqrt(
-                    Math.pow(mousePos.x - mouseDownPos.x, 2) + 
-                    Math.pow(mousePos.y - mouseDownPos.y, 2)
+                    Math.pow(mousePos.x - mouseDownPos.x, 2) + Math.pow(mousePos.y - mouseDownPos.y, 2)
                 );
-                
+
                 // 3픽셀 이상 이동하면 드래그 시작
                 if (distance > 3) {
                     setIsDragging(true);
                     setIsMouseDown(false);
                 }
             }
-            
+
             // 드래그 중일 때 포인트 위치 업데이트
             if (isDragging) {
                 const newX = mousePos.x - dragOffset.x;
                 const newY = mousePos.y - dragOffset.y;
-                
+
                 const updatedPath = updatePointPosition(currentPath, dragIndex, newX, newY);
                 const newPaths = [...paths];
                 newPaths[previewIndex] = updatedPath;
@@ -2199,7 +2301,7 @@ export default function Home() {
                 // 드래그가 끝났을 때만 히스토리에 저장
                 saveToHistory(paths);
             }
-            
+
             // 모든 상태 초기화
             setIsDragging(false);
             setIsMouseDown(false);
@@ -2208,12 +2310,12 @@ export default function Home() {
             setDragOffset({ x: 0, y: 0 });
         };
 
-        document.addEventListener('mousemove', handleGlobalMouseMove);
-        document.addEventListener('mouseup', handleGlobalMouseUp);
+        document.addEventListener("mousemove", handleGlobalMouseMove);
+        document.addEventListener("mouseup", handleGlobalMouseUp);
 
         return () => {
-            document.removeEventListener('mousemove', handleGlobalMouseMove);
-            document.removeEventListener('mouseup', handleGlobalMouseUp);
+            document.removeEventListener("mousemove", handleGlobalMouseMove);
+            document.removeEventListener("mouseup", handleGlobalMouseUp);
         };
     }, [isMouseDown, isDragging, dragIndex, dragOffset, mouseDownPos, currentPath, previewIndex, paths, saveToHistory]);
 
@@ -2357,12 +2459,7 @@ export default function Home() {
     }, [currentPath]);
 
     // 포인트 위치를 업데이트하는 함수
-    const updatePointPosition = (
-        path: string,
-        pointIndex: number,
-        newX: number,
-        newY: number
-    ): string => {
+    const updatePointPosition = (path: string, pointIndex: number, newX: number, newY: number): string => {
         try {
             const commands = parseSVGPath(path);
             const newCommands = [...commands];
@@ -2571,7 +2668,8 @@ export default function Home() {
                                     const rotation = numbers[2];
                                     const largeArc = numbers[3];
                                     const sweep = numbers[4];
-                                    newCommands[i] = `A ${rx} ${ry} ${rotation} ${largeArc} ${sweep} ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                                    newCommands[i] =
+                                        `A ${rx} ${ry} ${rotation} ${largeArc} ${sweep} ${newX.toFixed(3)} ${newY.toFixed(3)}`;
                                 }
                             } else {
                                 if (numbers.length >= 7) {
@@ -2582,7 +2680,8 @@ export default function Home() {
                                     const sweep = numbers[4];
                                     const dx = newX - currentX;
                                     const dy = newY - currentY;
-                                    newCommands[i] = `a ${rx} ${ry} ${rotation} ${largeArc} ${sweep} ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                                    newCommands[i] =
+                                        `a ${rx} ${ry} ${rotation} ${largeArc} ${sweep} ${dx.toFixed(3)} ${dy.toFixed(3)}`;
                                 }
                             }
                             return newCommands.join(" ");
@@ -2634,40 +2733,39 @@ export default function Home() {
     // 드래그 이벤트 핸들러들
     const getMousePositionFromEvent = (e: { clientX: number; clientY: number }) => {
         if (!svgRef.current) return { x: 0, y: 0 };
-        
+
         const rect = svgRef.current.getBoundingClientRect();
         const svgElement = svgRef.current;
         const viewBox = svgElement.viewBox.baseVal;
-        
+
         const scaleX = viewBox.width / rect.width;
         const scaleY = viewBox.height / rect.height;
-        
+
         return {
             x: (e.clientX - rect.left) * scaleX + viewBox.x,
-            y: (e.clientY - rect.top) * scaleY + viewBox.y
+            y: (e.clientY - rect.top) * scaleY + viewBox.y,
         };
     };
 
     const handleMouseDown = (e: React.MouseEvent<SVGGElement>, index: number) => {
         e.preventDefault();
         e.stopPropagation();
-        
+
         const mousePos = getMousePositionFromEvent(e);
         const point = anchorPoints[index];
-        
+
         // 포인트 선택
         setSelectedIndex(index);
-        
+
         // 드래그 준비 상태로 설정 (아직 드래그 시작 안함)
         setIsMouseDown(true);
         setDragIndex(index);
         setMouseDownPos(mousePos);
         setDragOffset({
             x: mousePos.x - point.x,
-            y: mousePos.y - point.y
+            y: mousePos.y - point.y,
         });
     };
-
 
     return (
         <div className="app-wrapper">
@@ -2824,196 +2922,186 @@ export default function Home() {
                         </button>
                     </div>
 
-                    <div className="section animation-section">
-                        <h2 className="section-title">애니메이션 컨트롤</h2>
-                        
-                        {/* Morphing 경로 선택 */}
-                        {paths.length >= 2 && (
-                            <>
-                                <div className="control-group">
-                                    <label className="label">모핑 시작 경로</label>
-                                    <select
-                                        value={morphingFromIndex}
-                                        onChange={(e) => setMorphingFromIndex(parseInt(e.target.value))}
-                                        className="select"
-                                    >
-                                        {paths.map((_, index) => (
-                                            <option key={index} value={index}>
-                                                Path {index + 1}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                
-                                <div className="control-group">
-                                    <label className="label">모핑 끝 경로</label>
-                                    <select
-                                        value={morphingToIndex}
-                                        onChange={(e) => setMorphingToIndex(parseInt(e.target.value))}
-                                        className="select"
-                                    >
-                                        {paths.map((_, index) => (
-                                            <option key={index} value={index}>
-                                                Path {index + 1}
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                            </>
-                        )}
-                        
-                        <div className="control-group">
-                            <label className="label">
-                                모핑 진행률 <span>{Math.round(t * 100)}%</span>
-                            </label>
-                            <input
-                                type="range"
-                                min={0}
-                                max={1}
-                                step={0.01}
-                                value={t}
-                                onChange={(e) => setT(parseFloat(e.target.value))}
-                            />
-                        </div>
-                        <div className="control-group">
-                            <label className="label">애니메이션 속도</label>
-                            <input
-                                type="range"
-                                min={0.5}
-                                max={5}
-                                step={0.1}
-                                value={animationSpeed}
-                                onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
-                            />
-                            <span>{animationSpeed.toFixed(1)}x</span>
-                        </div>
-                        <div className="button-row">
-                            <button
-                                onClick={toggleAnimation}
-                                className={`btn ${isAnimating ? "secondary" : "primary"}`}
-                            >
-                                {isAnimating ? (
-                                    <>
-                                        <Pause className="icon" size={14} /> 일시정지
-                                    </>
-                                ) : (
-                                    <>
-                                        <Play className="icon" size={14} /> 재생
-                                    </>
-                                )}
-                            </button>
-                            <button onClick={resetAnimation} className="btn small">
-                                <RotateCcw className="icon" size={14} />
-                            </button>
-                        </div>
-                        
-                        {/* Morphing 미리보기 */}
-                        {paths.length >= 2 && morphingPath && (
-                            <div className="morphing-preview">
-                                <h3>Morphing 미리보기</h3>
-                                <div className="morphing-info">
-                                    <span>Path {morphingFromIndex + 1} → Path {morphingToIndex + 1}</span>
-                                    <span>{Math.round(t * 100)}%</span>
-                                </div>
-                                <div className="morphing-svg-container">
-                                    <svg width="200" height="150" viewBox="0 0 400 400" style={{ border: '1px solid #ddd', borderRadius: '4px' }}>
-                                        <path 
-                                            d={morphingPath} 
-                                            fill="rgba(0,0,0,0.8)" 
-                                            stroke="#333" 
-                                            strokeWidth="1"
-                                        />
-                                    </svg>
-                                </div>
-                            </div>
-                        )}
-                    </div>
                 </section>
 
                 <section className="panel right">
                     <div className="section preview-section">
                         <div className="section-header">
                             <h2 className="section-title">미리보기</h2>
+                            <button
+                                className={`btn toggle-mode ${isAnimationMode ? "secondary" : "primary"}`}
+                                onClick={() => setIsAnimationMode(!isAnimationMode)}
+                                title={isAnimationMode ? "포인트 편집 모드로 전환" : "애니메이션 모드로 전환"}
+                            >
+                                {isAnimationMode ? "포인트 편집" : "애니메이션"}
+                            </button>
                         </div>
-                        {/* 현재 Path 정보 */}
-                        {previewIndex !== null && (
-                            <div className="path-info">
-                                <div className="path-info-title">Path {previewIndex + 1}</div>
-                                <span className="chip">{anchorPoints.length} Points</span>
-                                <span className="chip">{currentPath.length} Characters</span>
-                            </div>
-                        )}
-                        <div className="preview-container">
-                            {/* 포인트 리스트 */}
-                            <div className="point-list">
-                                <h3 className="point-list-title">Points</h3>
-                                <div className="point-items">
-                                    {anchorPoints.length > 0 ? (
-                                        anchorPoints.map((pt, i) => (
-                                            <button
-                                                key={i}
-                                                className={`point-item ${i === selectedIndex ? "selected" : ""} ${
-                                                    i === currentStartIndex ? "start" : ""
-                                                }`}
-                                                onClick={() => setSelectedIndex(i)}
-                                                title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
-                                            >
-                                                <span className="point-number">{i}</span>
-                                                <span className="point-coords">
-                                                    x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
-                                                </span>
-                                            </button>
-                                        ))
-                                    ) : (
-                                        <div className="no-points">포인트가 없습니다</div>
-                                    )}
-                                </div>
-                            </div>
 
+                        {!isAnimationMode ? (
+                            <>
+                                {/* 포인트 편집 모드 */}
+                                {previewIndex !== null && (
+                                    <div className="path-info">
+                                        <div className="path-info-title">Path {previewIndex + 1}</div>
+                                        <span className="chip">{anchorPoints.length} Points</span>
+                                        <span className="chip">{currentPath.length} Characters</span>
+                                    </div>
+                                )}
+                                <div className="preview-container">
+                                    {/* 포인트 리스트 */}
+                                    <div className="point-list">
+                                        <h3 className="point-list-title">Points</h3>
+                                        <div className="point-items">
+                                            {anchorPoints.length > 0 ? (
+                                                anchorPoints.map((pt, i) => (
+                                                    <button
+                                                        key={i}
+                                                        className={`point-item ${i === selectedIndex ? "selected" : ""} ${
+                                                            i === currentStartIndex ? "start" : ""
+                                                        }`}
+                                                        onClick={() => setSelectedIndex(i)}
+                                                        title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
+                                                    >
+                                                        <span className="point-number">{i}</span>
+                                                        <span className="point-coords">
+                                                            x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
+                                                        </span>
+                                                    </button>
+                                                ))
+                                            ) : (
+                                                <div className="no-points">포인트가 없습니다</div>
+                                            )}
+                                        </div>
+                                    </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* 애니메이션 모드 */}
+                                {paths.length >= 2 && (
+                                    <div className="animation-controls">
+                                        <div className="control-group">
+                                            <label className="label">시작 경로</label>
+                                            <select
+                                                value={morphingFromIndex}
+                                                onChange={(e) => setMorphingFromIndex(parseInt(e.target.value))}
+                                                className="select"
+                                            >
+                                                {paths.map((_, index) => (
+                                                    <option key={index} value={index}>
+                                                        Path {index + 1}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="control-group">
+                                            <label className="label">끝 경로</label>
+                                            <select
+                                                value={morphingToIndex}
+                                                onChange={(e) => setMorphingToIndex(parseInt(e.target.value))}
+                                                className="select"
+                                            >
+                                                {paths.map((_, index) => (
+                                                    <option key={index} value={index}>
+                                                        Path {index + 1}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        </div>
+                                        <div className="control-group">
+                                            <label className="label">모핑 진행률 <span>{Math.round(t * 100)}%</span></label>
+                                            <input
+                                                type="range"
+                                                min={0}
+                                                max={1}
+                                                step={0.01}
+                                                value={t}
+                                                onChange={(e) => setT(parseFloat(e.target.value))}
+                                            />
+                                        </div>
+                                        <div className="control-group">
+                                            <label className="label">애니메이션 속도</label>
+                                            <input
+                                                type="range"
+                                                min={0.5}
+                                                max={5}
+                                                step={0.1}
+                                                value={animationSpeed}
+                                                onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
+                                            />
+                                            <span>{animationSpeed.toFixed(1)}x</span>
+                                        </div>
+                                        <div className="button-row">
+                                            <button
+                                                onClick={toggleAnimation}
+                                                className={`btn ${isAnimating ? "secondary" : "primary"}`}
+                                            >
+                                                {isAnimating ? (
+                                                    <>
+                                                        <Pause size={16} />
+                                                        일시정지
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Play size={16} />
+                                                        재생
+                                                    </>
+                                                )}
+                                            </button>
+                                            <button onClick={resetAnimation} className="btn secondary">
+                                                <Square size={16} />
+                                                정지
+                                            </button>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        <div className="preview-container">
                             {/* SVG 미리보기 */}
                             <div className="preview">
-                                <svg 
+                                <svg
                                     ref={svgRef}
-                                    viewBox={viewBox} 
-                                    width="100%" 
+                                    viewBox={viewBox}
+                                    width="100%"
                                     height="100%"
-                                    style={{ userSelect: 'none' }}
+                                    style={{ userSelect: "none" }}
                                 >
-                                    {currentPath ? (
-                                        <>
-                                            <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
-                                            {anchorPoints.map((pt, i) => (
-                                                <g
-                                                    key={i}
-                                                    style={{ cursor: isDragging && dragIndex === i ? "grabbing" : "grab" }}
-                                                    onMouseDown={(e) => handleMouseDown(e, i)}
-                                                >
-                                                    <circle
-                                                        cx={pt.x}
-                                                        cy={pt.y}
-                                                        r={4}
-                                                        fill={
-                                                            i === currentStartIndex
-                                                                ? "#FFBB00"
-                                                                : "#666"
-                                                        }
-                                                        stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
-                                                        strokeWidth={i === selectedIndex ? 2 : 1}
-                                                    />
-                                                    <text
-                                                        x={pt.x}
-                                                        y={pt.y - 8}
-                                                        textAnchor="middle"
-                                                        fontSize="10"
-                                                        fill={
-                                                            i === selectedIndex
-                                                                ? "#FF4D47"
-                                                                : i === currentStartIndex
-                                                                  ? "#FFBB00"
-                                                                  : "#ddd"
-                                                        }
-                                                        fontWeight="bold"
-                                                        style={{ pointerEvents: "none" }}
+                                    {!isAnimationMode ? (
+                                        // 포인트 편집 모드
+                                        currentPath ? (
+                                            <>
+                                                <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
+                                                {anchorPoints.map((pt, i) => (
+                                                    <g
+                                                        key={i}
+                                                        style={{
+                                                            cursor: isDragging && dragIndex === i ? "grabbing" : "grab",
+                                                        }}
+                                                        onMouseDown={(e) => handleMouseDown(e, i)}
+                                                    >
+                                                        <circle
+                                                            cx={pt.x}
+                                                            cy={pt.y}
+                                                            r={4}
+                                                            fill={i === currentStartIndex ? "#FFBB00" : "#666"}
+                                                            stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
+                                                            strokeWidth={i === selectedIndex ? 2 : 1}
+                                                        />
+                                                        <text
+                                                            x={pt.x}
+                                                            y={pt.y - 8}
+                                                            textAnchor="middle"
+                                                            fontSize="10"
+                                                            fill={
+                                                                i === selectedIndex
+                                                                    ? "#FF4D47"
+                                                                    : i === currentStartIndex
+                                                                      ? "#FFBB00"
+                                                                      : "#ddd"
+                                                            }
+                                                            fontWeight="bold"
+                                                            style={{ pointerEvents: "none" }}
                                                     >
                                                         {i}
                                                     </text>
@@ -3024,7 +3112,17 @@ export default function Home() {
                                         <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
                                             경로를 추가하여 미리보기
                                         </text>
-                                    )}
+                                    )
+                                ) : (
+                                    // 애니메이션 모드
+                                    paths.length >= 2 && morphingPath ? (
+                                        <path d={morphingPath} fill="rgba(0,0,0,0.8)" stroke="#fff" strokeWidth="1" />
+                                    ) : (
+                                        <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
+                                            2개 이상의 경로가 필요합니다
+                                        </text>
+                                    )
+                                )}
                                 </svg>
                             </div>
                         </div>
