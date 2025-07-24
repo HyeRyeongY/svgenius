@@ -1710,7 +1710,7 @@ function reorderPathSafely(path: string, startIndex: number): string {
         console.log("Start index:", startIndex);
 
         if (startIndex <= 0 || startIndex >= commands.length) {
-            console.log("Start index out of range, returning original path");
+            console.log("Start index out of of range, returning original path");
             return path;
         }
 
@@ -1917,6 +1917,10 @@ function reorderPathSafely(path: string, startIndex: number): string {
     }
 }
 
+
+
+
+
 export default function Home() {
     const [paths, setPaths] = useState<string[]>([
         "M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z",
@@ -1938,7 +1942,7 @@ export default function Home() {
     const currentPath = previewIndex != null ? paths[previewIndex] : "";
 
     // 히스토리에 현재 상태 저장
-    const saveToHistory = (newPaths: string[]) => {
+    const saveToHistory = useCallback((newPaths: string[]) => {
         if (!Array.isArray(newPaths)) {
             console.warn("saveToHistory: newPaths is not an array", newPaths);
             return;
@@ -1948,7 +1952,7 @@ export default function Home() {
         newHistory.push([...newPaths]);
         setPathHistory(newHistory);
         setHistoryIndex(newHistory.length - 1);
-    };
+    }, [pathHistory, historyIndex]);
 
     // 되돌리기
     const undo = useCallback(() => {
@@ -2085,6 +2089,15 @@ export default function Home() {
     const [anchorPoints, setAnchorPoints] = useState<AnchorPoint[]>([]);
     const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
     const [currentStartIndex, setCurrentStartIndex] = useState<number>(0);
+    
+    // 드래그 기능
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragIndex, setDragIndex] = useState<number | null>(null);
+    const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 });
+    const [mouseDownPos, setMouseDownPos] = useState<{ x: number; y: number } | null>(null);
+    const [isMouseDown, setIsMouseDown] = useState(false);
+    const svgRef = useRef<SVGSVGElement>(null);
+    
     useEffect(() => {
         if (currentPath && currentPath.trim()) {
             const points = getAnchorPoints(currentPath);
@@ -2094,6 +2107,64 @@ export default function Home() {
             setAnchorPoints([]);
         }
     }, [currentPath]);
+
+    // 전역 마우스 이벤트 처리
+    useEffect(() => {
+        if (!isMouseDown && !isDragging) return;
+
+        const handleGlobalMouseMove = (e: MouseEvent) => {
+            if (!svgRef.current || dragIndex === null || previewIndex === null) return;
+            
+            const mousePos = getMousePositionFromEvent(e);
+            
+            // 마우스가 눌린 상태에서 일정 거리 이상 이동하면 드래그 시작
+            if (isMouseDown && !isDragging && mouseDownPos) {
+                const distance = Math.sqrt(
+                    Math.pow(mousePos.x - mouseDownPos.x, 2) + 
+                    Math.pow(mousePos.y - mouseDownPos.y, 2)
+                );
+                
+                // 3픽셀 이상 이동하면 드래그 시작
+                if (distance > 3) {
+                    setIsDragging(true);
+                    setIsMouseDown(false);
+                }
+            }
+            
+            // 드래그 중일 때 포인트 위치 업데이트
+            if (isDragging) {
+                const newX = mousePos.x - dragOffset.x;
+                const newY = mousePos.y - dragOffset.y;
+                
+                const updatedPath = updatePointPosition(currentPath, dragIndex, newX, newY);
+                const newPaths = [...paths];
+                newPaths[previewIndex] = updatedPath;
+                setPaths(newPaths);
+            }
+        };
+
+        const handleGlobalMouseUp = () => {
+            if (isDragging && previewIndex !== null) {
+                // 드래그가 끝났을 때만 히스토리에 저장
+                saveToHistory(paths);
+            }
+            
+            // 모든 상태 초기화
+            setIsDragging(false);
+            setIsMouseDown(false);
+            setDragIndex(null);
+            setMouseDownPos(null);
+            setDragOffset({ x: 0, y: 0 });
+        };
+
+        document.addEventListener('mousemove', handleGlobalMouseMove);
+        document.addEventListener('mouseup', handleGlobalMouseUp);
+
+        return () => {
+            document.removeEventListener('mousemove', handleGlobalMouseMove);
+            document.removeEventListener('mouseup', handleGlobalMouseUp);
+        };
+    }, [isMouseDown, isDragging, dragIndex, dragOffset, mouseDownPos, currentPath, previewIndex, paths, saveToHistory]);
 
     // svg viewbox 반응형
     function getPathBBox(pathD: string): { minX: number; minY: number; maxX: number; maxY: number } {
@@ -2234,6 +2305,267 @@ export default function Home() {
         }
     }, [currentPath]);
 
+    // 포인트 위치를 업데이트하는 함수
+    const updatePointPosition = (
+        path: string,
+        pointIndex: number,
+        newX: number,
+        newY: number
+    ): string => {
+        try {
+            const commands = parseSVGPath(path);
+            const newCommands = [...commands];
+            let pointCounter = 0;
+            let currentX = 0;
+            let currentY = 0;
+
+            for (let i = 0; i < commands.length; i++) {
+                const cmd = commands[i];
+                const cmdType = cmd[0];
+                const params = cmd.substring(1).trim();
+                const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+                const isAbsolute = cmdType === cmdType.toUpperCase();
+
+                switch (cmdType.toUpperCase()) {
+                    case "M":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                newCommands[i] = `M ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                            } else {
+                                const dx = newX - currentX;
+                                const dy = newY - currentY;
+                                newCommands[i] = `m ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 2) {
+                            const x = parseFloat(numbers[0] || "0");
+                            const y = parseFloat(numbers[1] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "L":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                newCommands[i] = `L ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                            } else {
+                                const dx = newX - currentX;
+                                const dy = newY - currentY;
+                                newCommands[i] = `l ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 2) {
+                            const x = parseFloat(numbers[0] || "0");
+                            const y = parseFloat(numbers[1] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "H":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                newCommands[i] = `L ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                            } else {
+                                const dx = newX - currentX;
+                                const dy = newY - currentY;
+                                newCommands[i] = `l ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 1) {
+                            const x = parseFloat(numbers[0] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "V":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                newCommands[i] = `L ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                            } else {
+                                const dx = newX - currentX;
+                                const dy = newY - currentY;
+                                newCommands[i] = `l ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 1) {
+                            const y = parseFloat(numbers[0] || "0");
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "C":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                if (numbers.length >= 6) {
+                                    const x1 = numbers[0];
+                                    const y1 = numbers[1];
+                                    const x2 = numbers[2];
+                                    const y2 = numbers[3];
+                                    newCommands[i] = `C ${x1} ${y1} ${x2} ${y2} ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                                }
+                            } else {
+                                if (numbers.length >= 6) {
+                                    const dx1 = parseFloat(numbers[0] || "0");
+                                    const dy1 = parseFloat(numbers[1] || "0");
+                                    const dx2 = parseFloat(numbers[2] || "0");
+                                    const dy2 = parseFloat(numbers[3] || "0");
+                                    const dx = newX - currentX;
+                                    const dy = newY - currentY;
+                                    newCommands[i] = `c ${dx1} ${dy1} ${dx2} ${dy2} ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                                }
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 6) {
+                            const x = parseFloat(numbers[4] || "0");
+                            const y = parseFloat(numbers[5] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "Q":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                if (numbers.length >= 4) {
+                                    const x1 = numbers[0];
+                                    const y1 = numbers[1];
+                                    newCommands[i] = `Q ${x1} ${y1} ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                                }
+                            } else {
+                                if (numbers.length >= 4) {
+                                    const dx1 = parseFloat(numbers[0] || "0");
+                                    const dy1 = parseFloat(numbers[1] || "0");
+                                    const dx = newX - currentX;
+                                    const dy = newY - currentY;
+                                    newCommands[i] = `q ${dx1} ${dy1} ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                                }
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 4) {
+                            const x = parseFloat(numbers[2] || "0");
+                            const y = parseFloat(numbers[3] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "S":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                if (numbers.length >= 4) {
+                                    const x2 = numbers[0];
+                                    const y2 = numbers[1];
+                                    newCommands[i] = `S ${x2} ${y2} ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                                }
+                            } else {
+                                if (numbers.length >= 4) {
+                                    const dx2 = parseFloat(numbers[0] || "0");
+                                    const dy2 = parseFloat(numbers[1] || "0");
+                                    const dx = newX - currentX;
+                                    const dy = newY - currentY;
+                                    newCommands[i] = `s ${dx2} ${dy2} ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                                }
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 4) {
+                            const x = parseFloat(numbers[2] || "0");
+                            const y = parseFloat(numbers[3] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "T":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                newCommands[i] = `T ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                            } else {
+                                const dx = newX - currentX;
+                                const dy = newY - currentY;
+                                newCommands[i] = `t ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 2) {
+                            const x = parseFloat(numbers[0] || "0");
+                            const y = parseFloat(numbers[1] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    case "A":
+                        if (pointCounter === pointIndex) {
+                            if (isAbsolute) {
+                                if (numbers.length >= 7) {
+                                    const rx = numbers[0];
+                                    const ry = numbers[1];
+                                    const rotation = numbers[2];
+                                    const largeArc = numbers[3];
+                                    const sweep = numbers[4];
+                                    newCommands[i] = `A ${rx} ${ry} ${rotation} ${largeArc} ${sweep} ${newX.toFixed(3)} ${newY.toFixed(3)}`;
+                                }
+                            } else {
+                                if (numbers.length >= 7) {
+                                    const rx = numbers[0];
+                                    const ry = numbers[1];
+                                    const rotation = numbers[2];
+                                    const largeArc = numbers[3];
+                                    const sweep = numbers[4];
+                                    const dx = newX - currentX;
+                                    const dy = newY - currentY;
+                                    newCommands[i] = `a ${rx} ${ry} ${rotation} ${largeArc} ${sweep} ${dx.toFixed(3)} ${dy.toFixed(3)}`;
+                                }
+                            }
+                            return newCommands.join(" ");
+                        }
+                        if (numbers.length >= 7) {
+                            const x = parseFloat(numbers[5] || "0");
+                            const y = parseFloat(numbers[6] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                        }
+                        pointCounter++;
+                        break;
+
+                    default:
+                        // 지원하지 않는 명령어나 Z 명령어
+                        if (cmdType.toUpperCase() !== "Z") {
+                            if (numbers.length >= 2) {
+                                const x = parseFloat(numbers[numbers.length - 2] || "0");
+                                const y = parseFloat(numbers[numbers.length - 1] || "0");
+                                currentX = isAbsolute ? x : currentX + x;
+                                currentY = isAbsolute ? y : currentY + y;
+                            }
+                        }
+                        break;
+                }
+            }
+
+            return path; // 포인트를 찾지 못한 경우 원본 반환
+        } catch (error) {
+            console.warn("Failed to update point position:", error);
+            return path;
+        }
+    };
+
     const handleSetStartPoint = () => {
         if (selectedIndex !== null && currentPath && previewIndex !== null) {
             // 실제 경로 재정렬 수행
@@ -2247,6 +2579,44 @@ export default function Home() {
             toast.success(`시작점을 #${selectedIndex}번 앵커로 재정의했습니다`);
         }
     };
+
+    // 드래그 이벤트 핸들러들
+    const getMousePositionFromEvent = (e: { clientX: number; clientY: number }) => {
+        if (!svgRef.current) return { x: 0, y: 0 };
+        
+        const rect = svgRef.current.getBoundingClientRect();
+        const svgElement = svgRef.current;
+        const viewBox = svgElement.viewBox.baseVal;
+        
+        const scaleX = viewBox.width / rect.width;
+        const scaleY = viewBox.height / rect.height;
+        
+        return {
+            x: (e.clientX - rect.left) * scaleX + viewBox.x,
+            y: (e.clientY - rect.top) * scaleY + viewBox.y
+        };
+    };
+
+    const handleMouseDown = (e: React.MouseEvent<SVGGElement>, index: number) => {
+        e.preventDefault();
+        e.stopPropagation();
+        
+        const mousePos = getMousePositionFromEvent(e);
+        const point = anchorPoints[index];
+        
+        // 포인트 선택
+        setSelectedIndex(index);
+        
+        // 드래그 준비 상태로 설정 (아직 드래그 시작 안함)
+        setIsMouseDown(true);
+        setDragIndex(index);
+        setMouseDownPos(mousePos);
+        setDragOffset({
+            x: mousePos.x - point.x,
+            y: mousePos.y - point.y
+        });
+    };
+
 
     return (
         <div className="app-wrapper">
@@ -2494,29 +2864,33 @@ export default function Home() {
 
                             {/* SVG 미리보기 */}
                             <div className="preview">
-                                <svg viewBox={viewBox} width="100%" height="100%">
+                                <svg 
+                                    ref={svgRef}
+                                    viewBox={viewBox} 
+                                    width="100%" 
+                                    height="100%"
+                                    style={{ userSelect: 'none' }}
+                                >
                                     {currentPath ? (
                                         <>
                                             <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
                                             {anchorPoints.map((pt, i) => (
                                                 <g
                                                     key={i}
-                                                    style={{ cursor: "pointer" }}
-                                                    onClick={() => setSelectedIndex(i)}
+                                                    style={{ cursor: isDragging && dragIndex === i ? "grabbing" : "grab" }}
+                                                    onMouseDown={(e) => handleMouseDown(e, i)}
                                                 >
                                                     <circle
                                                         cx={pt.x}
                                                         cy={pt.y}
                                                         r={4}
                                                         fill={
-                                                            i === selectedIndex
-                                                                ? "#FF4D47"
-                                                                : i === currentStartIndex
-                                                                  ? "#FFBB00"
-                                                                  : "#666"
+                                                            i === currentStartIndex
+                                                                ? "#FFBB00"
+                                                                : "#666"
                                                         }
-                                                        stroke="#fff"
-                                                        strokeWidth={1}
+                                                        stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
+                                                        strokeWidth={i === selectedIndex ? 2 : 1}
                                                     />
                                                     <text
                                                         x={pt.x}
