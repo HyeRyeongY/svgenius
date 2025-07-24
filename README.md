@@ -8,6 +8,7 @@ SVGenius is an advanced SVG editing tool that enables precise start point redefi
 
 **Start Point Redefinition**
 - One-click start point modification
+- Drag & drop point positioning
 - 100% shape preservation
 - Complete curve and detail retention
 
@@ -15,6 +16,12 @@ SVGenius is an advanced SVG editing tool that enables precise start point redefi
 - Drag & drop SVG file import
 - Individual path SVG export
 - Real-time preview
+
+**Interactive Point Editing**
+- Drag & drop point positioning with real-time preview
+- Smart drag detection (3px threshold)
+- Global mouse tracking for smooth dragging
+- Visual feedback with cursor states
 
 **Multi-Path Support**
 - Simultaneous editing of multiple paths
@@ -112,10 +119,11 @@ Complete support for all standard SVG path commands:
 1. Click the play button for the path you want to edit
 2. View path and anchor points in the preview panel
 
-### Step 3: Start Point Modification
-1. Click desired anchor point in preview
-2. Click "Set Start Point" button
-3. Path is reordered to new start point
+### Step 3: Point Modification
+1. **Select Point**: Click desired anchor point in preview (turns red)
+2. **Drag Point**: Drag the selected point to desired position for real-time path editing
+3. **Set Start Point**: Click "Set Start Point" button to reorder path to selected anchor
+4. Changes are automatically saved with undo/redo support
 
 ### Step 4: Export Results
 1. Verify reordered path
@@ -152,18 +160,60 @@ Complete support for all standard SVG path commands:
 
 ## Version
 
-**Current Version: v1.0.0**
+**Current Version: v1.1.0**
 
+- Interactive point drag & drop editing
 - Start point redefinition functionality
+- Real-time path modification
 - Curve preservation algorithm
 - Real-time preview
 - Animation controls
 - Multi-path support
+- Undo/Redo system
 - Korean UI support
 
 ---
 
+## Version History
+
+### v1.1.0 (2025-07-24)
+**Interactive Point Editing**
+- Added drag & drop point positioning with real-time preview
+- Implemented smart drag detection (3px threshold)
+- Added global mouse tracking for smooth dragging experience
+- Enhanced visual feedback with cursor states (grab/grabbing)
+- Improved point selection with red highlight indication
+- Automatic history saving on drag completion
+
+**Technical Improvements**
+- Advanced mouse event handling system
+- Precise SVG coordinate transformation
+- Comprehensive point update algorithm for all SVG command types
+- Performance optimizations for real-time editing
+- Enhanced error handling and stability
+
+### v1.0.0 (2025-07-22)
+**Initial Release**
+- Start point redefinition functionality
+- Curve preservation algorithm
+- Real-time preview system
+- Animation controls with speed adjustment
+- Multi-path support and management
+- SVG file import/export capabilities
+- Undo/Redo system implementation
+- Korean UI localization
+- Comprehensive SVG command support (M, L, H, V, C, Q, S, T, Z)
+- Custom SVG path parser engine
+
+---
+
 ## Technical Features
+
+**Interactive Editing System**
+- **Real-time Drag System**: Advanced mouse event handling with global tracking
+- **SVG Coordinate Transformation**: Precise coordinate conversion between screen and SVG space
+- **Smart Drag Detection**: 3-pixel threshold to distinguish clicks from drags
+- **Point Update Algorithm**: Comprehensive SVG command modification for all path types
 
 **Core Algorithms**
 - **Curve Preservation**: Perfect preservation of all curve types including Bézier and quadratic curves
@@ -179,13 +229,13 @@ Complete support for all standard SVG path commands:
 
 ## Contact
 
-**Developer**: HyeRyeong Yoon  
+**Developer**: HyeRyeong Yoon
 **Portfolio Link** : [yoonhr portfolio](https://yoonhr.com/)
 
 ---
 
 ## Docs
-**User Guide Link (KOR)**: [SVGenius 사용자 가이드](https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727)  
+**User Guide Link (KOR)**: [SVGenius 사용자 가이드](https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727)
 **Tech Portfolio Link (KOR)**: [SVGenius 기술 포트폴리오](https://www.notion.so/SVGenius-239a784e4dc2806486f8e2046b64463a)
 
 ---
