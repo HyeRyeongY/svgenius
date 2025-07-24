@@ -1,7 +1,7 @@
 // src/App.tsx
 "use client";
 
-import React, { useState, useRef, useEffect, useCallback } from "react";
+import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Target, Copy } from "lucide-react";
 
@@ -1921,6 +1921,47 @@ function reorderPathSafely(path: string, startIndex: number): string {
 
 
 
+
+// SVG path 간 보간을 위한 함수
+function interpolatePaths(path1: string, path2: string, t: number): string {
+    try {
+        const points1 = getAnchorPoints(path1);
+        const points2 = getAnchorPoints(path2);
+        
+        // 포인트 수가 다르면 보간할 수 없음
+        if (points1.length !== points2.length) {
+            return t < 0.5 ? path1 : path2;
+        }
+        
+        // 각 포인트를 보간
+        const interpolatedPoints = points1.map((p1, i) => {
+            const p2 = points2[i];
+            return {
+                x: p1.x + (p2.x - p1.x) * t,
+                y: p1.y + (p2.y - p1.y) * t,
+                index: i
+            };
+        });
+        
+        // 보간된 포인트들로 새로운 경로 생성 (간단한 직선 연결)
+        if (interpolatedPoints.length === 0) return path1;
+        
+        let result = `M ${interpolatedPoints[0].x.toFixed(3)} ${interpolatedPoints[0].y.toFixed(3)}`;
+        
+        for (let i = 1; i < interpolatedPoints.length; i++) {
+            const point = interpolatedPoints[i];
+            result += ` L ${point.x.toFixed(3)} ${point.y.toFixed(3)}`;
+        }
+        
+        result += " Z";
+        return result;
+        
+    } catch (error) {
+        console.warn("Path interpolation failed:", error);
+        return t < 0.5 ? path1 : path2;
+    }
+}
+
 export default function Home() {
     const [paths, setPaths] = useState<string[]>([
         "M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z",
@@ -1936,10 +1977,20 @@ export default function Home() {
     const [isAnimating, setIsAnimating] = useState(false);
     const [animationSpeed, setAnimationSpeed] = useState(2);
     const [previewIndex, setPreviewIndex] = useState<number | null>(0);
+    const [morphingFromIndex, setMorphingFromIndex] = useState<number>(0);
+    const [morphingToIndex, setMorphingToIndex] = useState<number>(1);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const animationRef = useRef<number | undefined>(undefined);
 
     const currentPath = previewIndex != null ? paths[previewIndex] : "";
+    
+    // Morphing을 위한 계산된 경로
+    const morphingPath = useMemo(() => {
+        if (paths.length >= 2 && morphingFromIndex < paths.length && morphingToIndex < paths.length) {
+            return interpolatePaths(paths[morphingFromIndex], paths[morphingToIndex], t);
+        }
+        return "";
+    }, [paths, morphingFromIndex, morphingToIndex, t]);
 
     // 히스토리에 현재 상태 저장
     const saveToHistory = useCallback((newPaths: string[]) => {
@@ -2775,6 +2826,42 @@ export default function Home() {
 
                     <div className="section animation-section">
                         <h2 className="section-title">애니메이션 컨트롤</h2>
+                        
+                        {/* Morphing 경로 선택 */}
+                        {paths.length >= 2 && (
+                            <>
+                                <div className="control-group">
+                                    <label className="label">모핑 시작 경로</label>
+                                    <select
+                                        value={morphingFromIndex}
+                                        onChange={(e) => setMorphingFromIndex(parseInt(e.target.value))}
+                                        className="select"
+                                    >
+                                        {paths.map((_, index) => (
+                                            <option key={index} value={index}>
+                                                Path {index + 1}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                                
+                                <div className="control-group">
+                                    <label className="label">모핑 끝 경로</label>
+                                    <select
+                                        value={morphingToIndex}
+                                        onChange={(e) => setMorphingToIndex(parseInt(e.target.value))}
+                                        className="select"
+                                    >
+                                        {paths.map((_, index) => (
+                                            <option key={index} value={index}>
+                                                Path {index + 1}
+                                            </option>
+                                        ))}
+                                    </select>
+                                </div>
+                            </>
+                        )}
+                        
                         <div className="control-group">
                             <label className="label">
                                 모핑 진행률 <span>{Math.round(t * 100)}%</span>
@@ -2819,6 +2906,27 @@ export default function Home() {
                                 <RotateCcw className="icon" size={14} />
                             </button>
                         </div>
+                        
+                        {/* Morphing 미리보기 */}
+                        {paths.length >= 2 && morphingPath && (
+                            <div className="morphing-preview">
+                                <h3>Morphing 미리보기</h3>
+                                <div className="morphing-info">
+                                    <span>Path {morphingFromIndex + 1} → Path {morphingToIndex + 1}</span>
+                                    <span>{Math.round(t * 100)}%</span>
+                                </div>
+                                <div className="morphing-svg-container">
+                                    <svg width="200" height="150" viewBox="0 0 400 400" style={{ border: '1px solid #ddd', borderRadius: '4px' }}>
+                                        <path 
+                                            d={morphingPath} 
+                                            fill="rgba(0,0,0,0.8)" 
+                                            stroke="#333" 
+                                            strokeWidth="1"
+                                        />
+                                    </svg>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </section>
 
