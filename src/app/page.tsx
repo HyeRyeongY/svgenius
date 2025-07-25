@@ -2926,14 +2926,14 @@ export default function Home() {
                             <h2 className="section-title">미리보기</h2>
                             <div className="toggle-btn">
                                 <button
-                                    className={`btn toggle ${isAnimationMode ? "primary" : "text"}`}
+                                    className={`btn toggle ${!isAnimationMode ? "primary" : "text"}`}
                                     onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     title={"포인트 편집 모드로 전환"}
                                 >
                                     포인트 편집
                                 </button>
                                 <button
-                                    className={`btn toggle ${isAnimationMode ? "text" : "primary"}`}
+                                    className={`btn toggle ${!isAnimationMode ? "text" : "primary"}`}
                                     onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     title={"애니메이션 모드로 전환"}
                                 >
@@ -2942,7 +2942,7 @@ export default function Home() {
                             </div>
                         </div>
 
-                        {isAnimationMode ? (
+                        {!isAnimationMode ? (
                             <>
                                 {/* 포인트 편집 모드 */}
                                 <div className="section-header">
