@@ -135,7 +135,7 @@ body {
 
 .button-row,
 .button-wrap,
-.chip-wrap {
+.chip-wrap, .wrap {
   display: flex;
   gap: 1rem;
 }
@@ -145,6 +145,14 @@ body {
 }
 .button-row button {
   width: 100%;
+}
+
+.wrap {
+  align-items: center;
+  flex: 1 1 auto;
+}
+.wrap label {
+  flex: 1 0 auto;
 }
 
 .button-column {
@@ -166,8 +174,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 0.4rem;
+  padding: 0 1rem;
   border-radius: 6px;
-  border: 1px solid #444;
+  border: 1px solid transparent;
   cursor: pointer;
   background: #000;
 }
@@ -178,28 +187,26 @@ body {
 }
 
 .btn.primary {
-  background: #222;
-  color: #fff;
+  background: #ffbb00;
+  color: #232323;
 }
 
 .btn.secondary {
   background: #222;
+  border: 1px solid #444;
   color: #fff;
 }
 
 .btn.danger {
   color: #ff4d47;
-  border: none;
 }
 
 .btn.active {
   color: #ffbb00;
-  border: none;
 }
 
 .btn.text {
   color: #aaa;
-  border: none;
 }
 
 .btn.full {
@@ -208,14 +215,39 @@ body {
 }
 
 .btn.small {
-  display: inline-block;
-  padding: 0 1rem;
   width: auto;
+}
+
+.btn.icon {
+  flex: 1 0 3.6rem;
 }
 
 .btn.disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+/* toggle */
+.toggle-btn {
+  width: auto;
+  display: flex;
+  border-radius: 10px;
+  background: #222;
+  padding: 4px;
+  height: 3.6rem;
+}
+.toggle-btn .btn {
+  width: 100%;
+  height: auto;
+  padding: 0 8px;
+  white-space: nowrap;
+  transition: all 0.2s ease-in-out;
+  background: #222;
+  border-radius: 8px;
+}
+.toggle-btn .btn.primary {
+  background: #ffbb00;
+  color: #232323;
 }
 
 .textarea {
@@ -237,8 +269,6 @@ body {
   font-weight: 400;
 }
 
-/* import */
-.import-section .section-title,
 .animation-section .section-title {
   margin-bottom: 2rem;
 }
@@ -369,7 +399,7 @@ body {
 input[type=range] {
   -webkit-appearance: none;
   width: 100%;
-  height: 12px;
+  height: 6px;
   background: #333;
   border-radius: 12px;
   outline: none;
@@ -382,16 +412,22 @@ input[type=range]::-webkit-slider-thumb {
   appearance: none;
   width: 14px;
   height: 14px;
-  background: #666;
+  background: #ffbb00;
   border: none;
   border-radius: 50%;
   cursor: pointer;
 }
 
-/* preview */
-.preview-section .button-row {
-  margin-top: 1rem;
+select {
+  width: 100%;
+  height: 3.6rem;
+  font-size: 1.4rem;
+  padding: 0 1rem;
+  border-radius: 6px;
+  background: #222;
 }
+
+/* preview */
 .preview-section .preview-container {
   display: flex;
   gap: 1rem;

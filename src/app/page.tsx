@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Play, Pause, Square, Undo2, Redo2, Target, Copy } from "lucide-react";
+import { Upload, Download, Plus, Pause, Square, Play, Undo2, Redo2, Target, Copy, Check } from "lucide-react";
 import { gsap } from "gsap";
 
 import Image from "next/image";
@@ -2781,16 +2781,6 @@ export default function Home() {
 
             <main className="main">
                 <section className="panel left">
-                    <div className="section import-section">
-                        <h2 className="section-title">
-                            <Upload className="icon" size={14} /> SVG 가져오기
-                        </h2>
-                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".svg" hidden />
-                        <button onClick={() => fileInputRef.current?.click()} className="btn full">
-                            <Upload className="icon" size={14} /> SVG 파일 선택
-                        </button>
-                    </div>
-
                     <div className="section path-editor">
                         <div className="section-header">
                             <div className="section-title-wrap">
@@ -2876,7 +2866,7 @@ export default function Home() {
                                         >
                                             <span>미리보기</span>
                                             {previewIndex === index ? (
-                                                <Play className="icon" size={14} />
+                                                <Check className="icon" size={14} />
                                             ) : (
                                                 <Square className="icon" size={14} />
                                             )}
@@ -2890,6 +2880,7 @@ export default function Home() {
                                             onChange={(e) => updatePath(index, e.target.value)}
                                             className="textarea"
                                             placeholder={`Enter SVG path ${index + 1}`}
+                                            spellCheck={false}
                                         />
                                         <button
                                             onClick={() => {
@@ -2922,33 +2913,73 @@ export default function Home() {
                         <button onClick={addNewPath} className="btn text">
                             <Plus className="icon" size={14} /> 새 경로 추가
                         </button>
+                        <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".svg" hidden />
+                        <button onClick={() => fileInputRef.current?.click()} className="btn text">
+                            <Upload className="icon" size={14} /> SVG 파일 가져오기
+                        </button>
                     </div>
-
                 </section>
 
                 <section className="panel right">
                     <div className="section preview-section">
                         <div className="section-header">
                             <h2 className="section-title">미리보기</h2>
-                            <button
-                                className={`btn toggle-mode ${isAnimationMode ? "secondary" : "primary"}`}
-                                onClick={() => setIsAnimationMode(!isAnimationMode)}
-                                title={isAnimationMode ? "포인트 편집 모드로 전환" : "애니메이션 모드로 전환"}
-                            >
-                                {isAnimationMode ? "포인트 편집" : "애니메이션"}
-                            </button>
+                            <div className="toggle-btn">
+                                <button
+                                    className={`btn toggle ${isAnimationMode ? "primary" : "text"}`}
+                                    onClick={() => setIsAnimationMode(!isAnimationMode)}
+                                    title={"포인트 편집 모드로 전환"}
+                                >
+                                    포인트 편집
+                                </button>
+                                <button
+                                    className={`btn toggle ${isAnimationMode ? "text" : "primary"}`}
+                                    onClick={() => setIsAnimationMode(!isAnimationMode)}
+                                    title={"애니메이션 모드로 전환"}
+                                >
+                                    애니메이션
+                                </button>
+                            </div>
                         </div>
 
-                        {!isAnimationMode ? (
+                        {isAnimationMode ? (
                             <>
                                 {/* 포인트 편집 모드 */}
-                                {previewIndex !== null && (
-                                    <div className="path-info">
-                                        <div className="path-info-title">Path {previewIndex + 1}</div>
-                                        <span className="chip">{anchorPoints.length} Points</span>
-                                        <span className="chip">{currentPath.length} Characters</span>
+                                <div className="section-header">
+                                    {previewIndex !== null && (
+                                        <div className="path-info">
+                                            <div className="path-info-title">Path {previewIndex + 1}</div>
+                                            <span className="chip">{anchorPoints.length} Points</span>
+                                            <span className="chip">{currentPath.length} Characters</span>
+                                        </div>
+                                    )}
+                                    <div className="button-wrap">
+                                        <button
+                                            onClick={undo}
+                                            disabled={historyIndex <= 0}
+                                            className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
+                                            title="되돌리기 (Ctrl+Z)"
+                                        >
+                                            <Undo2 className="icon" size={14} />
+                                        </button>
+                                        <button
+                                            onClick={redo}
+                                            disabled={historyIndex >= pathHistory.length - 1}
+                                            className={`btn secondary icon ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
+                                            title="다시실행 (Ctrl+Shift+Z)"
+                                        >
+                                            <Redo2 className="icon" size={14} />
+                                        </button>
+                                        <button
+                                            className="btn primary"
+                                            onClick={handleSetStartPoint}
+                                            disabled={selectedIndex === null}
+                                        >
+                                            <Target className="icon" size={14} />
+                                            시작점 설정
+                                        </button>
                                     </div>
-                                )}
+                                </div>
                                 <div className="preview-container">
                                     {/* 포인트 리스트 */}
                                     <div className="point-list">
@@ -2975,6 +3006,63 @@ export default function Home() {
                                             )}
                                         </div>
                                     </div>
+                                    {/* SVG 미리보기 */}
+                                    {/* 포인트 편집 모드 */}
+                                    <div className="preview">
+                                        <svg
+                                            ref={svgRef}
+                                            viewBox={viewBox}
+                                            width="100%"
+                                            height="100%"
+                                            style={{ userSelect: "none" }}
+                                        >
+                                            {currentPath ? (
+                                                <>
+                                                    <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
+                                                    {anchorPoints.map((pt, i) => (
+                                                        <g
+                                                            key={i}
+                                                            style={{
+                                                                cursor:
+                                                                    isDragging && dragIndex === i ? "grabbing" : "grab",
+                                                            }}
+                                                            onMouseDown={(e) => handleMouseDown(e, i)}
+                                                        >
+                                                            <circle
+                                                                cx={pt.x}
+                                                                cy={pt.y}
+                                                                r={4}
+                                                                fill={i === currentStartIndex ? "#FFBB00" : "#666"}
+                                                                stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
+                                                                strokeWidth={i === selectedIndex ? 2 : 1}
+                                                            />
+                                                            <text
+                                                                x={pt.x}
+                                                                y={pt.y - 8}
+                                                                textAnchor="middle"
+                                                                fontSize="10"
+                                                                fill={
+                                                                    i === selectedIndex
+                                                                        ? "#FF4D47"
+                                                                        : i === currentStartIndex
+                                                                          ? "#FFBB00"
+                                                                          : "#ddd"
+                                                                }
+                                                                fontWeight="bold"
+                                                                style={{ pointerEvents: "none" }}
+                                                            >
+                                                                {i}
+                                                            </text>
+                                                        </g>
+                                                    ))}
+                                                </>
+                                            ) : (
+                                                <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
+                                                    경로를 추가하여 미리보기
+                                                </text>
+                                            )}
+                                        </svg>
+                                    </div>
                                 </div>
                             </>
                         ) : (
@@ -2982,8 +3070,8 @@ export default function Home() {
                                 {/* 애니메이션 모드 */}
                                 {paths.length >= 2 && (
                                     <div className="animation-controls">
-                                        <div className="control-group">
-                                            <label className="label">시작 경로</label>
+                                        <div className="wrap">
+                                            <label className="label">Start Path</label>
                                             <select
                                                 value={morphingFromIndex}
                                                 onChange={(e) => setMorphingFromIndex(parseInt(e.target.value))}
@@ -2995,9 +3083,7 @@ export default function Home() {
                                                     </option>
                                                 ))}
                                             </select>
-                                        </div>
-                                        <div className="control-group">
-                                            <label className="label">끝 경로</label>
+                                            <label className="label">End Path</label>
                                             <select
                                                 value={morphingToIndex}
                                                 onChange={(e) => setMorphingToIndex(parseInt(e.target.value))}
@@ -3009,9 +3095,34 @@ export default function Home() {
                                                     </option>
                                                 ))}
                                             </select>
+
+                                            <div className="button-wrap">
+                                                <button
+                                                    onClick={toggleAnimation}
+                                                    className={`btn icon ${isAnimating ? "secondary" : "primary"}`}
+                                                    title={isAnimating ? "일시정지" : "재생"}
+                                                >
+                                                    {isAnimating ? (
+                                                        <>
+                                                            <Pause size={16} />
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <Play size={16} />
+                                                        </>
+                                                    )}
+                                                </button>
+                                                <button
+                                                    onClick={resetAnimation}
+                                                    className="btn icon secondary"
+                                                    title="정지"
+                                                >
+                                                    <Square size={16} />
+                                                </button>
+                                            </div>
                                         </div>
-                                        <div className="control-group">
-                                            <label className="label">모핑 진행률 <span>{Math.round(t * 100)}%</span></label>
+                                        <div className="wrap" style={{ margin: "1rem 0" }}>
+                                            <label className="label">애니메이션 진행</label>
                                             <input
                                                 type="range"
                                                 min={0}
@@ -3020,8 +3131,11 @@ export default function Home() {
                                                 value={t}
                                                 onChange={(e) => setT(parseFloat(e.target.value))}
                                             />
+                                            <span className="chip" style={{ width: "50px", justifyContent: "center" }}>
+                                                {Math.round(t * 100)}%
+                                            </span>
                                         </div>
-                                        <div className="control-group">
+                                        <div className="wrap" style={{ margin: "1rem 0 2rem" }}>
                                             <label className="label">애니메이션 속도</label>
                                             <input
                                                 type="range"
@@ -3031,130 +3145,39 @@ export default function Home() {
                                                 value={animationSpeed}
                                                 onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
                                             />
-                                            <span>{animationSpeed.toFixed(1)}x</span>
-                                        </div>
-                                        <div className="button-row">
-                                            <button
-                                                onClick={toggleAnimation}
-                                                className={`btn ${isAnimating ? "secondary" : "primary"}`}
-                                            >
-                                                {isAnimating ? (
-                                                    <>
-                                                        <Pause size={16} />
-                                                        일시정지
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Play size={16} />
-                                                        재생
-                                                    </>
-                                                )}
-                                            </button>
-                                            <button onClick={resetAnimation} className="btn secondary">
-                                                <Square size={16} />
-                                                정지
-                                            </button>
+                                            <span className="chip" style={{ width: "50px", justifyContent: "center" }}>
+                                                {animationSpeed.toFixed(1)}x
+                                            </span>
                                         </div>
                                     </div>
                                 )}
+                                <div className="preview-container">
+                                    {/* SVG 미리보기 */}
+                                    <div className="preview">
+                                        <svg
+                                            ref={svgRef}
+                                            viewBox={viewBox}
+                                            width="100%"
+                                            height="100%"
+                                            style={{ userSelect: "none" }}
+                                        >
+                                            {paths.length >= 2 && morphingPath ? (
+                                                <path
+                                                    d={morphingPath}
+                                                    fill="rgba(0,0,0,0.8)"
+                                                    stroke="#fff"
+                                                    strokeWidth="1"
+                                                />
+                                            ) : (
+                                                <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
+                                                    2개 이상의 경로가 필요합니다
+                                                </text>
+                                            )}
+                                        </svg>
+                                    </div>
+                                </div>
                             </>
                         )}
-
-                        <div className="preview-container">
-                            {/* SVG 미리보기 */}
-                            <div className="preview">
-                                <svg
-                                    ref={svgRef}
-                                    viewBox={viewBox}
-                                    width="100%"
-                                    height="100%"
-                                    style={{ userSelect: "none" }}
-                                >
-                                    {!isAnimationMode ? (
-                                        // 포인트 편집 모드
-                                        currentPath ? (
-                                            <>
-                                                <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
-                                                {anchorPoints.map((pt, i) => (
-                                                    <g
-                                                        key={i}
-                                                        style={{
-                                                            cursor: isDragging && dragIndex === i ? "grabbing" : "grab",
-                                                        }}
-                                                        onMouseDown={(e) => handleMouseDown(e, i)}
-                                                    >
-                                                        <circle
-                                                            cx={pt.x}
-                                                            cy={pt.y}
-                                                            r={4}
-                                                            fill={i === currentStartIndex ? "#FFBB00" : "#666"}
-                                                            stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
-                                                            strokeWidth={i === selectedIndex ? 2 : 1}
-                                                        />
-                                                        <text
-                                                            x={pt.x}
-                                                            y={pt.y - 8}
-                                                            textAnchor="middle"
-                                                            fontSize="10"
-                                                            fill={
-                                                                i === selectedIndex
-                                                                    ? "#FF4D47"
-                                                                    : i === currentStartIndex
-                                                                      ? "#FFBB00"
-                                                                      : "#ddd"
-                                                            }
-                                                            fontWeight="bold"
-                                                            style={{ pointerEvents: "none" }}
-                                                    >
-                                                        {i}
-                                                    </text>
-                                                </g>
-                                            ))}
-                                        </>
-                                    ) : (
-                                        <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
-                                            경로를 추가하여 미리보기
-                                        </text>
-                                    )
-                                ) : (
-                                    // 애니메이션 모드
-                                    paths.length >= 2 && morphingPath ? (
-                                        <path d={morphingPath} fill="rgba(0,0,0,0.8)" stroke="#fff" strokeWidth="1" />
-                                    ) : (
-                                        <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
-                                            2개 이상의 경로가 필요합니다
-                                        </text>
-                                    )
-                                )}
-                                </svg>
-                            </div>
-                        </div>
-                        <div className="button-row">
-                            <button
-                                onClick={undo}
-                                disabled={historyIndex <= 0}
-                                className={`btn secondary small ${historyIndex <= 0 ? "disabled" : ""}`}
-                                title="되돌리기 (Ctrl+Z)"
-                            >
-                                <Undo2 className="icon" size={14} />
-                            </button>
-                            <button
-                                onClick={redo}
-                                disabled={historyIndex >= pathHistory.length - 1}
-                                className={`btn secondary small ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
-                                title="다시실행 (Ctrl+Shift+Z)"
-                            >
-                                <Redo2 className="icon" size={14} />
-                            </button>
-                            <button
-                                className="btn primary full"
-                                onClick={handleSetStartPoint}
-                                disabled={selectedIndex === null}
-                            >
-                                <Target className="icon" size={14} />
-                                시작점 설정
-                            </button>
-                        </div>
                     </div>
                 </section>
             </main>
