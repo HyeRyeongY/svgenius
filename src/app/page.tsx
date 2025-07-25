@@ -2847,11 +2847,11 @@ export default function Home() {
                                             );
                                         })()}
                                     </label>
-                                    <div className="button-wrap">
+                                    <div className="button-wrap" style={{ justifyContent: "flex-end" }}>
                                         {paths.length > 1 && (
                                             <button
                                                 onClick={() => removePath(index)}
-                                                className="btn danger"
+                                                className="btn danger small"
                                                 title="경로 삭제"
                                             >
                                                 <span>삭제</span>
@@ -2863,6 +2863,7 @@ export default function Home() {
                                             }}
                                             className={`btn preview-btn ${previewIndex === index ? "active" : "text"}`}
                                             title={previewIndex === index ? "미리보기 끄기" : "미리보기 켜기"}
+                                            style={{ padding: "4px 0" }}
                                         >
                                             <span>미리보기</span>
                                             {previewIndex === index ? (
@@ -2902,7 +2903,7 @@ export default function Home() {
                                     </div>
                                     <button
                                         onClick={() => exportPathAsSVG(paths[index], index)}
-                                        className="btn secondary"
+                                        className="btn secondary export-btn"
                                     >
                                         <Download className="icon" size={14} />
                                         내보내기
