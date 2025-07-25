@@ -3,7 +3,7 @@
 
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
-import { Upload, Download, Plus, Play, Pause, Square, RotateCcw, Undo2, Redo2, Target, Copy } from "lucide-react";
+import { Upload, Download, Plus, Play, Pause, Square, Undo2, Redo2, Target, Copy } from "lucide-react";
 import { gsap } from "gsap";
 
 import Image from "next/image";
@@ -2016,7 +2016,9 @@ function interpolatePaths(path1: string, path2: string, t: number): string {
                             currentX += interpolatedParams[2];
                             currentY += interpolatedParams[3];
                         } else {
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
                             currentX = interpolatedParams[2];
+                            // eslint-disable-next-line @typescript-eslint/no-unused-vars
                             currentY = interpolatedParams[3];
                         }
                     }
