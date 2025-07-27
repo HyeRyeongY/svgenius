@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { toast } from "sonner";
 import { Upload, Download, Plus, Pause, Square, Play, Undo2, Redo2, Target, Copy, Check } from "lucide-react";
+import Tooltip from "../components/Tooltip";
 import { gsap } from "gsap";
 
 import Image from "next/image";
@@ -2787,30 +2788,34 @@ export default function Home() {
                                 <h2 className="section-title">Path 편집기</h2>
                                 <span className="chip">{paths.length} Paths</span>
                             </div>
-                            <button
-                                onClick={() => {
-                                    const normalized = normalizeAllPaths(paths);
-                                    setPaths(normalized);
-                                    saveToHistory(normalized);
-                                    setIsNormalized(true); // 정규화 완료 상태로 설정
-                                    toast.success("모든 경로의 포인트 수를 맞췄습니다");
-                                }}
-                                className="btn small primary"
-                                disabled={(() => {
-                                    // 유효한 경로들만 필터링 (빈 문자열이 아닌 경로)
-                                    const validPaths = paths.filter((path) => path.trim().length > 0);
-                                    return validPaths.length < 2;
-                                })()}
-                                title={(() => {
+                            <Tooltip
+                                content={(() => {
                                     const validPaths = paths.filter((path) => path.trim().length > 0);
                                     if (validPaths.length < 2) {
                                         return "내용이 있는 경로가 2개 이상 필요합니다";
                                     }
                                     return "모든 경로의 포인트 수를 최대값으로 정규화";
                                 })()}
+                                position="bottom"
                             >
-                                Points 정규화
-                            </button>
+                                <button
+                                    onClick={() => {
+                                        const normalized = normalizeAllPaths(paths);
+                                        setPaths(normalized);
+                                        saveToHistory(normalized);
+                                        setIsNormalized(true); // 정규화 완료 상태로 설정
+                                        toast.success("모든 경로의 포인트 수를 맞췄습니다");
+                                    }}
+                                    className="btn small primary"
+                                    disabled={(() => {
+                                        // 유효한 경로들만 필터링 (빈 문자열이 아닌 경로)
+                                        const validPaths = paths.filter((path) => path.trim().length > 0);
+                                        return validPaths.length < 2;
+                                    })()}
+                                >
+                                    Points 정규화
+                                </button>
+                            </Tooltip>
                         </div>
 
                         {paths.map((path, index) => (
@@ -2849,29 +2854,28 @@ export default function Home() {
                                     </label>
                                     <div className="button-wrap" style={{ justifyContent: "flex-end" }}>
                                         {paths.length > 1 && (
-                                            <button
-                                                onClick={() => removePath(index)}
-                                                className="btn danger small"
-                                                title="경로 삭제"
-                                            >
-                                                <span>삭제</span>
-                                            </button>
+                                            <Tooltip content="경로 삭제" position="bottom">
+                                                <button onClick={() => removePath(index)} className="btn danger small">
+                                                    <span>삭제</span>
+                                                </button>
+                                            </Tooltip>
                                         )}
-                                        <button
-                                            onClick={() => {
-                                                setPreviewIndex((prev) => (prev === index ? null : index));
-                                            }}
-                                            className={`btn preview-btn ${previewIndex === index ? "active" : "text"}`}
-                                            title={previewIndex === index ? "미리보기 끄기" : "미리보기 켜기"}
-                                            style={{ padding: "4px 0" }}
-                                        >
-                                            <span>미리보기</span>
-                                            {previewIndex === index ? (
-                                                <Check className="icon" size={14} />
-                                            ) : (
-                                                <Square className="icon" size={14} />
-                                            )}
-                                        </button>
+                                        <Tooltip content={previewIndex === index ? "미리보기 끄기" : "미리보기 켜기"}>
+                                            <button
+                                                onClick={() => {
+                                                    setPreviewIndex((prev) => (prev === index ? null : index));
+                                                }}
+                                                className={`btn preview-btn ${previewIndex === index ? "active" : "text"}`}
+                                                style={{ padding: "4px 0" }}
+                                            >
+                                                <span>미리보기</span>
+                                                {previewIndex === index ? (
+                                                    <Check className="icon" size={14} />
+                                                ) : (
+                                                    <Square className="icon" size={14} />
+                                                )}
+                                            </button>
+                                        </Tooltip>
                                     </div>
                                 </div>
                                 <div className="path-wrap">
@@ -2883,31 +2887,44 @@ export default function Home() {
                                             placeholder={`Enter SVG path ${index + 1}`}
                                             spellCheck={false}
                                         />
-                                        <button
-                                            onClick={() => {
-                                                navigator.clipboard
-                                                    .writeText(path)
-                                                    .then(() => {
-                                                        toast.success("Path가 클립보드에 복사되었습니다");
-                                                    })
-                                                    .catch(() => {
-                                                        toast.error("복사에 실패했습니다");
-                                                    });
-                                            }}
-                                            className="btn copy-btn"
-                                            title="Path 복사"
-                                            disabled={!path.trim()}
-                                        >
-                                            <Copy className="icon" size={14} />
-                                        </button>
+                                        <div className="copy-btn">
+                                            <Tooltip content="Path 복사" position="bottom">
+                                                <button
+                                                    onClick={() => {
+                                                        navigator.clipboard
+                                                            .writeText(path)
+                                                            .then(() => {
+                                                                toast.success("Path가 클립보드에 복사되었습니다");
+                                                            })
+                                                            .catch(() => {
+                                                                toast.error("복사에 실패했습니다");
+                                                            });
+                                                    }}
+                                                    className="btn icon"
+                                                    disabled={!path.trim()}
+                                                    style={{
+                                                        width: "2.8rem",
+                                                        height: "2.8rem",
+                                                        padding: "0",
+                                                        display: "flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                    }}
+                                                >
+                                                    <Copy className="icon" size={14} />
+                                                </button>
+                                            </Tooltip>
+                                        </div>
                                     </div>
-                                    <button
-                                        onClick={() => exportPathAsSVG(paths[index], index)}
-                                        className="btn secondary export-btn"
-                                    >
-                                        <Download className="icon" size={14} />
-                                        내보내기
-                                    </button>
+                                    <Tooltip content="SVG 파일로 내보내기" position="bottom">
+                                        <button
+                                            onClick={() => exportPathAsSVG(paths[index], index)}
+                                            className="btn secondary export-btn"
+                                        >
+                                            <Download className="icon" size={14} />
+                                            내보내기
+                                        </button>
+                                    </Tooltip>
                                 </div>
                             </div>
                         ))}
@@ -2924,22 +2941,24 @@ export default function Home() {
                 <section className="panel right">
                     <div className="section preview-section">
                         <div className="section-header">
-                            <h2 className="section-title">미리보기</h2>
+                            {/* <h2 className="section-title">미리보기</h2> */}
                             <div className="toggle-btn">
-                                <button
-                                    className={`btn toggle ${!isAnimationMode ? "primary" : "text"}`}
-                                    onClick={() => setIsAnimationMode(!isAnimationMode)}
-                                    title={"포인트 편집 모드로 전환"}
-                                >
-                                    포인트 편집
-                                </button>
-                                <button
-                                    className={`btn toggle ${!isAnimationMode ? "text" : "primary"}`}
-                                    onClick={() => setIsAnimationMode(!isAnimationMode)}
-                                    title={"애니메이션 모드로 전환"}
-                                >
-                                    애니메이션
-                                </button>
+                                <Tooltip content="포인트 편집 모드로 전환" position="bottom">
+                                    <button
+                                        className={`btn toggle ${!isAnimationMode ? "primary" : "text"}`}
+                                        onClick={() => setIsAnimationMode(!isAnimationMode)}
+                                    >
+                                        포인트 편집
+                                    </button>
+                                </Tooltip>
+                                <Tooltip content="애니메이션 모드로 전환" position="bottom">
+                                    <button
+                                        className={`btn toggle ${!isAnimationMode ? "text" : "primary"}`}
+                                        onClick={() => setIsAnimationMode(!isAnimationMode)}
+                                    >
+                                        애니메이션
+                                    </button>
+                                </Tooltip>
                             </div>
                         </div>
 
@@ -2955,30 +2974,34 @@ export default function Home() {
                                         </div>
                                     )}
                                     <div className="button-wrap">
-                                        <button
-                                            onClick={undo}
-                                            disabled={historyIndex <= 0}
-                                            className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
-                                            title="되돌리기 (Ctrl+Z)"
-                                        >
-                                            <Undo2 className="icon" size={14} />
-                                        </button>
-                                        <button
-                                            onClick={redo}
-                                            disabled={historyIndex >= pathHistory.length - 1}
-                                            className={`btn secondary icon ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
-                                            title="다시실행 (Ctrl+Shift+Z)"
-                                        >
-                                            <Redo2 className="icon" size={14} />
-                                        </button>
-                                        <button
-                                            className="btn primary"
-                                            onClick={handleSetStartPoint}
-                                            disabled={selectedIndex === null}
-                                        >
-                                            <Target className="icon" size={14} />
-                                            시작점 설정
-                                        </button>
+                                        <Tooltip content="되돌리기 (Ctrl+Z)" position="bottom">
+                                            <button
+                                                onClick={undo}
+                                                disabled={historyIndex <= 0}
+                                                className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
+                                            >
+                                                <Undo2 className="icon" size={14} />
+                                            </button>
+                                        </Tooltip>
+                                        <Tooltip content="다시실행 (Ctrl+Shift+Z)" position="bottom">
+                                            <button
+                                                onClick={redo}
+                                                disabled={historyIndex >= pathHistory.length - 1}
+                                                className={`btn secondary icon ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
+                                            >
+                                                <Redo2 className="icon" size={14} />
+                                            </button>
+                                        </Tooltip>
+                                        <Tooltip content="선택된 점을 시작점으로 설정" position="bottom">
+                                            <button
+                                                className="btn primary"
+                                                onClick={handleSetStartPoint}
+                                                disabled={selectedIndex === null}
+                                            >
+                                                <Target className="icon" size={14} />
+                                                시작점 설정
+                                            </button>
+                                        </Tooltip>
                                     </div>
                                 </div>
                                 <div className="preview-container">
@@ -3098,28 +3121,27 @@ export default function Home() {
                                             </select>
 
                                             <div className="button-wrap">
-                                                <button
-                                                    onClick={toggleAnimation}
-                                                    className={`btn icon ${isAnimating ? "secondary" : "primary"}`}
-                                                    title={isAnimating ? "일시정지" : "재생"}
-                                                >
-                                                    {isAnimating ? (
-                                                        <>
-                                                            <Pause size={16} />
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <Play size={16} />
-                                                        </>
-                                                    )}
-                                                </button>
-                                                <button
-                                                    onClick={resetAnimation}
-                                                    className="btn icon secondary"
-                                                    title="정지"
-                                                >
-                                                    <Square size={16} />
-                                                </button>
+                                                <Tooltip content={isAnimating ? "일시정지" : "재생"} position="bottom">
+                                                    <button
+                                                        onClick={toggleAnimation}
+                                                        className={`btn icon ${isAnimating ? "secondary" : "primary"}`}
+                                                    >
+                                                        {isAnimating ? (
+                                                            <>
+                                                                <Pause size={16} />
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Play size={16} />
+                                                            </>
+                                                        )}
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="정지" position="bottom">
+                                                    <button onClick={resetAnimation} className="btn icon secondary">
+                                                        <Square size={16} />
+                                                    </button>
+                                                </Tooltip>
                                             </div>
                                         </div>
                                         <div className="wrap" style={{ margin: "1rem 0" }}>

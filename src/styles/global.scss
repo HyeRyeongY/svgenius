@@ -134,7 +134,8 @@ body {
 
 .button-row,
 .button-wrap,
-.chip-wrap, .wrap {
+.chip-wrap,
+.wrap {
     display: flex;
     gap: 1rem;
 }
@@ -144,7 +145,7 @@ body {
         width: 100%;
     }
 }
-.wrap{
+.wrap {
     align-items: center;
     flex: 1 1 auto;
     label {
@@ -306,14 +307,14 @@ body {
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: var(--color-surface-elevated);
-                border: 1px solid var(--color-border);
-                border-radius: 6px;
-                color: var(--color-text-secondary);
                 cursor: pointer;
                 transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
                 transform: scale(1);
-                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+                .btn {
+                    background: var(--color-surface-elevated);
+                    border: 1px solid var(--color-border);
+                    color: var(--color-text-secondary);
+                }
 
                 &:hover:not(:disabled) {
                     background: var(--color-primary);
@@ -343,7 +344,6 @@ body {
                 }
             }
         }
-
     }
     .btn {
         flex-shrink: 0;
