@@ -72,7 +72,18 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <body>
                 {children}
 
-                <Toaster position="top-right" />
+                <Toaster 
+                    position="top-center" 
+                    theme="dark"
+                    toastOptions={{
+                        style: {
+                            background: '#333',
+                            color: '#fff',
+                            border: '1px solid #444',
+                        },
+                        className: 'dark-toast',
+                    }}
+                />
             </body>
         </html>
     );

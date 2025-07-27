@@ -24,7 +24,7 @@ import { gsap } from "gsap";
 
 import Image from "next/image";
 
-// SVG 경로를 명령어 단위로 정확히 파싱하는 함수
+// SVG Path를 명령어 단위로 정확히 파싱하는 함수
 function parseSVGPath(path: string): string[] {
     console.log("Parsing path:", path);
 
@@ -64,7 +64,7 @@ type AnchorPoint = { x: number; y: number; index: number };
 
 function getAnchorPoints(path: string): AnchorPoint[] {
     try {
-        // 원본 경로를 사용하여 앵커 포인트 계산 (재정렬된 경로가 아닌)
+        // 원본 Path를 사용하여 앵커 포인트 계산 (재정렬된 Path가 아닌)
         const commands = parseSVGPath(path);
         const points: AnchorPoint[] = [];
         let currentX = 0;
@@ -640,7 +640,7 @@ function getCurveLength(
     return length;
 }
 
-// 경로에 포인트를 추가하여 지정된 수만큼 맞추는 함수 (개선된 버전)
+// Path에 포인트를 추가하여 지정된 수만큼 맞추는 함수 (개선된 버전)
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function normalizePathPointCount(path: string, targetPointCount: number): string {
     try {
@@ -681,7 +681,7 @@ function normalizePathPointCount(path: string, targetPointCount: number): string
     }
 }
 
-// 경로에서 중복 포인트 제거하는 함수
+// Path에서 중복 포인트 제거하는 함수
 function removeDuplicatePoints(path: string): string {
     try {
         const commands = parseSVGPath(path);
@@ -763,7 +763,7 @@ function removeDuplicatePoints(path: string): string {
     }
 }
 
-// 경로에 하나의 포인트를 추가하는 함수 (개선된 버전)
+// Path에 하나의 포인트를 추가하는 함수 (개선된 버전)
 function addSinglePointToPath(path: string): string {
     try {
         const commands = parseSVGPath(path);
@@ -794,7 +794,7 @@ function addSinglePointToPath(path: string): string {
 
             switch (cmdType.toUpperCase()) {
                 case "M":
-                    // M 명령어는 분할하지 않음 - 경로의 시작점이므로
+                    // M 명령어는 분할하지 않음 - Path의 시작점이므로
                     if (numbers.length >= 2) {
                         const x = parseFloat(numbers[0] || "0");
                         const y = parseFloat(numbers[1] || "0");
@@ -1080,7 +1080,7 @@ function normalizePathPreservingCurves(path: string, targetPointCount: number): 
             segmentWeights.map((s) => `${s.type}:${s.pointsToAdd}`)
         );
 
-        // 새로운 경로 구성
+        // 새로운 Path 구성
         const newCommands: string[] = [];
         let currentX = 0,
             currentY = 0;
@@ -1148,7 +1148,7 @@ function normalizePathPreservingCurves(path: string, targetPointCount: number): 
     }
 }
 
-// 경로 세그먼트들을 분석하는 함수
+// Path 세그먼트들을 분석하는 함수
 function analyzePathSegments(path: string): Array<{ type: string; isCurve: boolean; length: number; command: string }> {
     const commands = parseSVGPath(path);
     const segments: Array<{ type: string; isCurve: boolean; length: number; command: string }> = [];
@@ -1435,7 +1435,7 @@ function subdivideQuadraticBezierRange(
     return [point1.x, point1.y, cpX, cpY, point2.x, point2.y];
 }
 
-// 경로의 전체 길이를 계산하는 함수
+// Path의 전체 길이를 계산하는 함수
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function calculateTotalPathLength(path: string): number {
     try {
@@ -1543,7 +1543,7 @@ function calculateTotalPathLength(path: string): number {
     }
 }
 
-// 경로 상에서 특정 거리에 있는 점을 찾는 함수
+// Path 상에서 특정 거리에 있는 점을 찾는 함수
 // eslint-disable-next-line @typescript-eslint/no-unused-vars
 function getPointAtDistance(path: string, targetDistance: number): { x: number; y: number } | null {
     try {
@@ -1693,7 +1693,7 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
             }
         }
 
-        // 목표 거리가 경로 끝을 넘어선 경우 마지막 점 반환
+        // 목표 거리가 Path 끝을 넘어선 경우 마지막 점 반환
         return { x: currentX, y: currentY };
     } catch (error) {
         console.warn("Failed to get point at distance:", error);
@@ -1701,7 +1701,7 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
     }
 }
 
-// 모든 경로의 포인트 수를 최대값으로 맞추는 함수 (곡선 보존 방식)
+// 모든 Path의 포인트 수를 최대값으로 맞추는 함수 (곡선 보존 방식)
 function normalizeAllPaths(paths: string[]): string[] {
     const pointCounts = paths.map((path) => getAnchorPoints(path).length);
     const maxPoints = Math.max(...pointCounts);
@@ -1718,7 +1718,7 @@ function normalizeAllPaths(paths: string[]): string[] {
     });
 }
 
-// 경로를 시작점부터 재구성하는 함수 (곡선 보존 + 포인트 수 유지)
+// Path를 시작점부터 재구성하는 함수 (곡선 보존 + 포인트 수 유지)
 function reorderPathSafely(path: string, startIndex: number): string {
     try {
         const commands = parseSVGPath(path);
@@ -2074,7 +2074,7 @@ export default function Home() {
 
     const currentPath = previewIndex != null ? paths[previewIndex] : "";
 
-    // Morphing을 위한 계산된 경로
+    // Morphing을 위한 계산된 Path
     const morphingPath = useMemo(() => {
         if (paths.length >= 2 && morphingFromIndex < paths.length && morphingToIndex < paths.length) {
             return interpolatePaths(paths[morphingFromIndex], paths[morphingToIndex], t);
@@ -2146,15 +2146,15 @@ export default function Home() {
         newPaths[index] = value;
         setPaths(newPaths);
         saveToHistory(newPaths);
-        setIsNormalized(false); // 경로 수정시 정규화 상태 해제
+        setIsNormalized(false); // Path 수정시 정규화 상태 해제
     };
 
     const addNewPath = () => {
         const newPaths = [...paths, ""];
         setPaths(newPaths);
         saveToHistory(newPaths);
-        setIsNormalized(false); // 새 경로 추가시 정규화 상태 해제
-        toast.success("새 경로가 추가되었습니다");
+        setIsNormalized(false); // 새 Path 추가시 정규화 상태 해제
+        toast.success("새 Path가 추가되었습니다");
     };
 
     const removePath = (index: number) => {
@@ -2162,8 +2162,8 @@ export default function Home() {
             const newPaths = paths.filter((_, i) => i !== index);
             setPaths(newPaths);
             saveToHistory(newPaths);
-            setIsNormalized(false); // 경로 삭제시 정규화 상태 해제
-            toast.success(`#${index} 경로가 삭제되었습니다`);
+            setIsNormalized(false); // Path 삭제시 정규화 상태 해제
+            toast.success(`#${index} Path가 삭제되었습니다`);
         }
     };
 
@@ -2198,14 +2198,14 @@ export default function Home() {
                 const content = e.target?.result as string;
                 const extractedPaths = extractPathsFromSVG(content);
                 if (extractedPaths.length > 0) {
-                    // 기존 경로들에 새로운 경로들을 추가
+                    // 기존 Path들에 새로운 Path들을 추가
                     const newPaths = [...paths, ...extractedPaths];
                     setPaths(newPaths);
                     saveToHistory(newPaths);
                     setIsNormalized(false); // 파일 업로드시 정규화 상태 해제
-                    toast.success(`SVG 파일에서 ${extractedPaths.length}개의 경로를 추가했습니다`);
+                    toast.success(`SVG 파일에서 ${extractedPaths.length}개의 Path를 추가했습니다`);
                 } else {
-                    toast.error("SVG 파일에 경로가 없습니다");
+                    toast.error("SVG 파일에 Path가 없습니다");
                 }
             };
             reader.readAsText(file);
@@ -2340,7 +2340,7 @@ export default function Home() {
     // svg viewbox 반응형
     function getPathBBox(pathD: string): { minX: number; minY: number; maxX: number; maxY: number } {
         try {
-            // 문자열 기반으로 경로의 경계 상자 계산
+            // 문자열 기반으로 Path의 경계 상자 계산
             const commands = parseSVGPath(pathD);
             const points: Array<{ x: number; y: number }> = [];
 
@@ -2736,7 +2736,7 @@ export default function Home() {
 
     const handleSetStartPoint = () => {
         if (selectedIndex !== null && currentPath && previewIndex !== null) {
-            // 실제 경로 재정렬 수행
+            // 실제 Path 재정렬 수행
             const reorderedPath = reorderPathSafely(currentPath, selectedIndex);
             const newPaths = [...paths];
             newPaths[previewIndex] = reorderedPath;
@@ -2888,9 +2888,9 @@ export default function Home() {
                                 content={(() => {
                                     const validPaths = paths.filter((path) => path.trim().length > 0);
                                     if (validPaths.length < 2) {
-                                        return "내용이 있는 경로가 2개 이상 필요합니다";
+                                        return "내용이 있는 Path가 2개 이상 필요합니다";
                                     }
-                                    return "모든 경로의 포인트 수를 최대값으로 정규화";
+                                    return "모든 Path의 포인트 수를 최대값으로 정규화";
                                 })()}
                                 position="bottom"
                             >
@@ -2900,11 +2900,11 @@ export default function Home() {
                                         setPaths(normalized);
                                         saveToHistory(normalized);
                                         setIsNormalized(true); // 정규화 완료 상태로 설정
-                                        toast.success("모든 경로의 포인트 수를 맞췄습니다");
+                                        toast.success("모든 Path의 포인트 수를 맞췄습니다");
                                     }}
                                     className="btn small primary"
                                     disabled={(() => {
-                                        // 유효한 경로들만 필터링 (빈 문자열이 아닌 경로)
+                                        // 유효한 Path들만 필터링 (빈 문자열이 아닌 Path)
                                         const validPaths = paths.filter((path) => path.trim().length > 0);
                                         return validPaths.length < 2;
                                     })()}
@@ -2931,9 +2931,9 @@ export default function Home() {
 
                                             // 정규화됨 표시 조건:
                                             // 1. 실제로 정규화 버튼을 눌렀어야 함 (isNormalized === true)
-                                            // 2. 유효한 경로가 2개 이상 있어야 함
-                                            // 3. 현재 경로가 유효해야 함
-                                            // 4. 현재 경로의 포인트 수가 최대값과 같아야 함
+                                            // 2. 유효한 Path가 2개 이상 있어야 함
+                                            // 3. 현재 Path가 유효해야 함
+                                            // 4. 현재 Path의 포인트 수가 최대값과 같아야 함
                                             const shouldShowNormalized =
                                                 isNormalized &&
                                                 validPaths.length > 1 &&
@@ -2950,8 +2950,11 @@ export default function Home() {
                                     </label>
                                     <div className="button-wrap" style={{ justifyContent: "flex-end" }}>
                                         {paths.length > 1 && (
-                                            <Tooltip content="경로 삭제" position="bottom">
-                                                <RippleButton onClick={() => removePath(index)} className="btn danger small">
+                                            <Tooltip content="Path 삭제" position="bottom">
+                                                <RippleButton
+                                                    onClick={() => removePath(index)}
+                                                    className="btn danger small"
+                                                >
                                                     <span>삭제</span>
                                                 </RippleButton>
                                             </Tooltip>
@@ -3026,7 +3029,7 @@ export default function Home() {
                             </div>
                         ))}
                         <RippleButton onClick={addNewPath} className="btn text">
-                            <Plus className="icon" size={14} /> 새 경로 추가
+                            <Plus className="icon" size={14} /> 새 Path 추가
                         </RippleButton>
                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".svg" hidden />
                         <RippleButton onClick={() => fileInputRef.current?.click()} className="btn text">
@@ -3073,7 +3076,7 @@ export default function Home() {
                                             <div className="button-wrap">
                                                 <Tooltip content="되돌리기 (Ctrl+Z)" position="bottom">
                                                     <RippleButton
-                                                        onClick={undo}
+                                                        onCick={undo}
                                                         disabled={historyIndex <= 0}
                                                         className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
                                                     >
@@ -3104,92 +3107,33 @@ export default function Home() {
                                         <div className="no-data">미리보기를 켜주세요</div>
                                     )}
                                 </div>
-                                <div className="preview-container">
-                                    {previewIndex !== null ? (
-                                        <>
-                                            {currentPath.trim() ? (
-                                                <>
-                                                    {/* 포인트 리스트 */}
-                                                    <div className="point-list">
-                                                        <h3 className="point-list-title">Points</h3>
-                                                        <div className="point-items">
-                                                            {anchorPoints.map((pt, i) => (
-                                                        <RippleButton
-                                                            key={i}
-                                                            className={`point-item ${i === selectedIndex ? "selected" : ""} ${
-                                                                i === currentStartIndex ? "start" : ""
-                                                            }`}
-                                                            onClick={() => setSelectedIndex(i)}
-                                                            title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
-                                                        >
-                                                            <span className="point-number">{i}</span>
-                                                            <span className="point-coords">
-                                                                x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
-                                                            </span>
-                                                        </RippleButton>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                            {/* SVG 미리보기 */}
-                                            {/* 포인트 편집 모드 */}
-                                            <div className="preview">
-                                                <svg
-                                                    ref={svgRef}
-                                                    viewBox={viewBox}
-                                                    width="100%"
-                                                    height="100%"
-                                                    style={{ userSelect: "none" }}
-                                                >
-                                                    <>
-                                                        <path
-                                                            d={currentPath}
-                                                            fill="black"
-                                                            stroke="black"
-                                                            strokeWidth={2}
-                                                        />
+                                {previewIndex !== null ? (
+                                    <div className="preview-container">
+                                        {currentPath.trim() ? (
+                                            <>
+                                                {/* 포인트 리스트 */}
+                                                <div className="point-list">
+                                                    <h3 className="point-list-title">Points</h3>
+                                                    <div className="point-items">
                                                         {anchorPoints.map((pt, i) => (
-                                                            <g
+                                                            <RippleButton
                                                                 key={i}
-                                                                style={{
-                                                                    cursor:
-                                                                        isDragging && dragIndex === i
-                                                                            ? "grabbing"
-                                                                            : "grab",
-                                                                }}
-                                                                onMouseDown={(e) => handleMouseDown(e, i)}
+                                                                className={`point-item ${i === selectedIndex ? "selected" : ""} ${
+                                                                    i === currentStartIndex ? "start" : ""
+                                                                }`}
+                                                                onClick={() => setSelectedIndex(i)}
+                                                                title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
                                                             >
-                                                                <circle
-                                                                    cx={pt.x}
-                                                                    cy={pt.y}
-                                                                    r={4}
-                                                                    fill={i === currentStartIndex ? "#FFBB00" : "#666"}
-                                                                    stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
-                                                                    strokeWidth={i === selectedIndex ? 2 : 1}
-                                                                />
-                                                                <text
-                                                                    x={pt.x}
-                                                                    y={pt.y - 8}
-                                                                    textAnchor="middle"
-                                                                    fontSize="9"
-                                                                    fill={
-                                                                        i === selectedIndex
-                                                                            ? "#FF4D47"
-                                                                            : i === currentStartIndex
-                                                                              ? "#FFBB00"
-                                                                              : "#ddd"
-                                                                    }
-                                                                    fontWeight="bold"
-                                                                    style={{ pointerEvents: "none" }}
-                                                                >
-                                                                    {i}
-                                                                </text>
-                                                            </g>
+                                                                <span className="point-number">{i}</span>
+                                                                <span className="point-coords">
+                                                                    x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
+                                                                </span>
+                                                            </RippleButton>
                                                         ))}
-                                                    </>
-                                                </svg>
-                                            </div>
-                                                </>
-                                            ) : (
+                                                    </div>
+                                                </div>
+                                                {/* SVG 미리보기 */}
+                                                {/* 포인트 편집 모드 */}
                                                 <div className="preview">
                                                     <svg
                                                         ref={svgRef}
@@ -3198,15 +3142,76 @@ export default function Home() {
                                                         height="100%"
                                                         style={{ userSelect: "none" }}
                                                     >
-                                                        <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="14">
-                                                            Path를 추가해주세요
-                                                        </text>
+                                                        <>
+                                                            <path
+                                                                d={currentPath}
+                                                                fill="black"
+                                                                stroke="black"
+                                                                strokeWidth={2}
+                                                            />
+                                                            {anchorPoints.map((pt, i) => (
+                                                                <g
+                                                                    key={i}
+                                                                    style={{
+                                                                        cursor:
+                                                                            isDragging && dragIndex === i
+                                                                                ? "grabbing"
+                                                                                : "grab",
+                                                                    }}
+                                                                    onMouseDown={(e) => handleMouseDown(e, i)}
+                                                                >
+                                                                    <circle
+                                                                        cx={pt.x}
+                                                                        cy={pt.y}
+                                                                        r={4}
+                                                                        fill={
+                                                                            i === currentStartIndex ? "#FFBB00" : "#666"
+                                                                        }
+                                                                        stroke={
+                                                                            i === selectedIndex ? "#FF4D47" : "#fff"
+                                                                        }
+                                                                        strokeWidth={i === selectedIndex ? 2 : 1}
+                                                                    />
+                                                                    <text
+                                                                        x={pt.x}
+                                                                        y={pt.y - 8}
+                                                                        textAnchor="middle"
+                                                                        fontSize="9"
+                                                                        fill={
+                                                                            i === selectedIndex
+                                                                                ? "#FF4D47"
+                                                                                : i === currentStartIndex
+                                                                                  ? "#FFBB00"
+                                                                                  : "#ddd"
+                                                                        }
+                                                                        fontWeight="bold"
+                                                                        style={{ pointerEvents: "none" }}
+                                                                    >
+                                                                        {i}
+                                                                    </text>
+                                                                </g>
+                                                            ))}
+                                                        </>
                                                     </svg>
                                                 </div>
-                                            )}
-                                        </>
-                                    ) : null}
-                                </div>
+                                            </>
+                                        ) : (
+                                            <div className="preview">
+                                                <svg
+                                                    ref={svgRef}
+                                                    viewBox={viewBox}
+                                                    width="100%"
+                                                    height="100%"
+                                                    style={{ userSelect: "none" }}
+                                                >
+                                                    <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="9">
+                                                        Path를 추가해주세요
+                                                    </text>
+                                                </svg>
+                                            </div>
+                                        )}
+                                    </div>
+                                ) : null}
                             </>
                         ) : (
                             <>
@@ -3214,7 +3219,7 @@ export default function Home() {
                                 {paths.length >= 2 && (
                                     <div className="animation-controls">
                                         <div className="wrap">
-                                            <label className="label">Start Path</label>
+                                            <label className="label">시작 Path</label>
                                             <select
                                                 value={morphingFromIndex}
                                                 onChange={(e) => setMorphingFromIndex(parseInt(e.target.value))}
@@ -3226,7 +3231,7 @@ export default function Home() {
                                                     </option>
                                                 ))}
                                             </select>
-                                            <label className="label">End Path</label>
+                                            <label className="label">끝 Path</label>
                                             <select
                                                 value={morphingToIndex}
                                                 onChange={(e) => setMorphingToIndex(parseInt(e.target.value))}
@@ -3241,10 +3246,10 @@ export default function Home() {
 
                                             <div className="button-wrap">
                                                 <Tooltip content={isAnimating ? "일시정지" : "재생"} position="bottom">
-                                                    <RippleButton 
-                                                        onClick={toggleAnimation} 
+                                                    <RippleButton
+                                                        onClick={toggleAnimation}
                                                         className={"btn icon primary"}
-                                                        disabled={paths.filter(p => p.trim()).length < 2}
+                                                        disabled={paths.filter((p) => p.trim()).length < 2}
                                                     >
                                                         {isAnimating ? (
                                                             <>
@@ -3258,10 +3263,10 @@ export default function Home() {
                                                     </RippleButton>
                                                 </Tooltip>
                                                 <Tooltip content="정지" position="bottom">
-                                                    <RippleButton 
-                                                        onClick={resetAnimation} 
+                                                    <RippleButton
+                                                        onClick={resetAnimation}
                                                         className="btn icon secondary"
-                                                        disabled={paths.filter(p => p.trim()).length < 2}
+                                                        disabled={paths.filter((p) => p.trim()).length < 2}
                                                     >
                                                         <Square size={16} />
                                                     </RippleButton>
@@ -3298,31 +3303,30 @@ export default function Home() {
                                         </div>
                                     </div>
                                 )}
-                                <div className="preview-container">
-                                    {/* SVG 미리보기 */}
-                                    <div className="preview">
-                                        <svg
-                                            ref={svgRef}
-                                            viewBox={viewBox}
-                                            width="100%"
-                                            height="100%"
-                                            style={{ userSelect: "none" }}
-                                        >
-                                            {paths.length >= 2 && morphingPath ? (
+
+                                {paths.length >= 2 && morphingPath ? (
+                                    <div className="preview-container">
+                                        {/* SVG 미리보기 */}
+                                        <div className="preview">
+                                            <svg
+                                                ref={svgRef}
+                                                viewBox={viewBox}
+                                                width="100%"
+                                                height="100%"
+                                                style={{ userSelect: "none" }}
+                                            >
                                                 <path
                                                     d={morphingPath}
                                                     fill="rgba(0,0,0,0.8)"
                                                     stroke="#ffbb00"
                                                     strokeWidth="1"
                                                 />
-                                            ) : (
-                                                <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="9">
-                                                    2개 이상의 경로가 필요합니다
-                                                </text>
-                                            )}
-                                        </svg>
+                                            </svg>
+                                        </div>
                                     </div>
-                                </div>
+                                ) : (
+                                    <div className="no-data">2개 이상의 Path가 필요합니다</div>
+                                )}
                             </>
                         )}
                     </div>
