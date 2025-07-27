@@ -44,7 +44,7 @@ SVGenius is an advanced SVG editing tool that enables precise start point redefi
 - Comprehensive tooltip system for all interactive elements
 - Undo/Redo functionality with keyboard shortcuts
 - Responsive design with optimized layout
-- Korean UI support with bilingual documentation
+- English UI with intuitive design
 
 ---
 
@@ -126,34 +126,34 @@ Complete support for all standard SVG path commands:
 ## Usage
 
 ### Step 1: Import SVG
-1. Click "SVG 파일 가져오기" button or drag & drop SVG files
+1. Click "Import SVG File" button or drag & drop SVG files
 2. Upload desired SVG file
 3. Paths are automatically extracted and displayed
 
 ### Step 2: Path Normalization (Optional)
-1. Click "Points 정규화" button to normalize point counts across all paths
+1. Click "Normalize Points" button to normalize point counts across all paths
 2. This ensures smooth morphing between paths with different complexities
 3. View normalized point counts in real-time
 
 ### Step 3: Path Selection and Preview
-1. Click the "미리보기" toggle button for the path you want to edit
+1. Click the "Preview" toggle button for the path you want to edit
 2. View path and anchor points in the preview panel
-3. Switch between "포인트 편집" and "애니메이션" modes
+3. Switch between "Point Editing" and "Animation" modes
 
 ### Step 4: Point Modification
 1. **Select Point**: Click desired anchor point in preview (turns red)
 2. **Drag Point**: Drag the selected point to desired position for real-time path editing
-3. **Set Start Point**: Click "시작점 설정" button to reorder path to selected anchor
+3. **Set Start Point**: Click "Set Start Point" button to reorder path to selected anchor
 4. Changes are automatically saved with undo/redo support
 
 ### Step 5: Animation Testing
-1. Switch to "애니메이션" mode
+1. Switch to "Animation" mode
 2. Use play/pause/stop controls to test morphing animations
 3. Adjust animation speed (0.5x ~ 5.0x) for optimal preview
 
 ### Step 6: Export Results
 1. Verify reordered and optimized paths
-2. Use "내보내기" button to download individual SVG files
+2. Use "Export" button to download individual SVG files
 3. Copy paths to clipboard using the copy button
 
 ---
@@ -189,18 +189,24 @@ Complete support for all standard SVG path commands:
 
 ## Version
 
-**Current Version: v1.2.0**
+**Current Version: v1.3.0**
 
 - Enhanced tooltip system for improved user experience
 - Path normalization with intelligent point balancing
 - Advanced copy functionality for individual paths
 - Improved animation controls with better visual feedback
-- Korean UI with comprehensive tooltips
+- English UI with comprehensive tooltips
 - Responsive design optimizations
 
 ---
 
 ## Version History
+
+### v1.3.0 (2025-07-27)
+**UI/UX Enhancements**
+- Complete UI localization from Korean to English
+- Enhanced button states with proper disabled styling
+- Improved visual consistency across all interactive elements
 
 ### v1.2.0 (2025-07-27)
 **Enhanced User Experience**
@@ -284,4 +290,4 @@ Complete support for all standard SVG path commands:
 
 ## Keywords
 
-`SVG` `path manipulation` `morphing` `animation` `design tools` `vector graphics` `bezier curves` `anchor points` `real-time preview` `UI animation` `design workflow` `frontend development` `point normalization` `interactive editing` `tooltip system`
+`SVG` `path manipulation` `morphing` `animation` `design tools` `vector graphics` `bezier curves` `anchor points` `real-time preview` `UI animation` `design workflow` `frontend development` `point normalization` `interactive editing`

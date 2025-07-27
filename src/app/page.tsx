@@ -24,7 +24,7 @@ import { gsap } from "gsap";
 
 import Image from "next/image";
 
-// SVG Path를 명령어 단위로 정확히 파싱하는 함수
+// Function to accurately parse SVG Path by command units
 function parseSVGPath(path: string): string[] {
     console.log("Parsing path:", path);
 
@@ -35,22 +35,22 @@ function parseSVGPath(path: string): string[] {
     while (i < path.length) {
         const char = path[i];
 
-        // 명령어 문자인지 확인
+        // Check if it's a command character
         if (/[MmLlHhVvCcSsQqTtZz]/.test(char)) {
-            // 이전 명령어가 있으면 저장
+            // Save previous command if exists
             if (current) {
                 commands.push(current);
                 console.log("Added command:", current);
             }
             current = char;
         } else {
-            // 명령어가 아닌 문자는 현재 명령어에 추가
+            // Non-command characters are added to current command
             current += char;
         }
         i++;
     }
 
-    // 마지막 명령어 추가
+    // Add final command
     if (current) {
         commands.push(current);
         console.log("Added final command:", current);
@@ -2881,16 +2881,16 @@ export default function Home() {
                     <div className="section path-editor">
                         <div className="section-header">
                             <div className="section-title-wrap">
-                                <h2 className="section-title">Path 편집기</h2>
+                                <h2 className="section-title">Path Editor</h2>
                                 <span className="chip">{paths.length} Paths</span>
                             </div>
                             <Tooltip
                                 content={(() => {
                                     const validPaths = paths.filter((path) => path.trim().length > 0);
                                     if (validPaths.length < 2) {
-                                        return "내용이 있는 Path가 2개 이상 필요합니다";
+                                        return "At least 2 paths with content are required";
                                     }
-                                    return "모든 Path의 포인트 수를 최대값으로 정규화";
+                                    return "Normalize all paths to maximum point count";
                                 })()}
                                 position="bottom"
                             >
@@ -2900,16 +2900,16 @@ export default function Home() {
                                         setPaths(normalized);
                                         saveToHistory(normalized);
                                         setIsNormalized(true); // 정규화 완료 상태로 설정
-                                        toast.success("모든 Path의 포인트 수를 맞췄습니다");
+                                        toast.success("All paths normalized to equal point counts");
                                     }}
                                     className="btn small primary"
                                     disabled={(() => {
-                                        // 유효한 Path들만 필터링 (빈 문자열이 아닌 Path)
+                                        // Filter valid paths (non-empty strings)
                                         const validPaths = paths.filter((path) => path.trim().length > 0);
                                         return validPaths.length < 2;
                                     })()}
                                 >
-                                    Points 정규화
+                                    Normalize Points
                                 </RippleButton>
                             </Tooltip>
                         </div>
@@ -2950,16 +2950,16 @@ export default function Home() {
                                     </label>
                                     <div className="button-wrap" style={{ justifyContent: "flex-end" }}>
                                         {paths.length > 1 && (
-                                            <Tooltip content="Path 삭제" position="bottom">
+                                            <Tooltip content="Delete Path" position="bottom">
                                                 <RippleButton
                                                     onClick={() => removePath(index)}
                                                     className="btn danger small"
                                                 >
-                                                    <span>삭제</span>
+                                                    <span>Delete</span>
                                                 </RippleButton>
                                             </Tooltip>
                                         )}
-                                        <Tooltip content={previewIndex === index ? "미리보기 끄기" : "미리보기 켜기"}>
+                                        <Tooltip content={previewIndex === index ? "Hide Preview" : "Show Preview"}>
                                             <RippleButton
                                                 onClick={() => {
                                                     setPreviewIndex((prev) => (prev === index ? null : index));
@@ -2967,7 +2967,7 @@ export default function Home() {
                                                 className={`btn preview-btn ${previewIndex === index ? "active" : "text"}`}
                                                 style={{ padding: "4px 0" }}
                                             >
-                                                <span>미리보기</span>
+                                                <span>Preview</span>
                                                 {previewIndex === index ? (
                                                     <CircleDot className="icon" size={14} />
                                                 ) : (
@@ -2987,16 +2987,16 @@ export default function Home() {
                                             spellCheck={false}
                                         />
                                         <div className="copy-btn">
-                                            <Tooltip content="Path 복사" position="bottom">
+                                            <Tooltip content="Copy Path" position="bottom">
                                                 <RippleButton
                                                     onClick={() => {
                                                         navigator.clipboard
                                                             .writeText(path)
                                                             .then(() => {
-                                                                toast.success("Path가 클립보드에 복사되었습니다");
+                                                                toast.success("Path copied to clipboard");
                                                             })
                                                             .catch(() => {
-                                                                toast.error("복사에 실패했습니다");
+                                                                toast.error("Failed to copy");
                                                             });
                                                     }}
                                                     className="btn icon"
@@ -3015,25 +3015,25 @@ export default function Home() {
                                             </Tooltip>
                                         </div>
                                     </div>
-                                    <Tooltip content="SVG 파일로 내보내기" position="bottom">
+                                    <Tooltip content="Export as SVG file" position="bottom">
                                         <RippleButton
                                             onClick={() => exportPathAsSVG(paths[index], index)}
                                             className="btn secondary export-btn"
                                             disabled={!path.trim()}
                                         >
                                             <Download className="icon" size={14} />
-                                            내보내기
+                                            Export
                                         </RippleButton>
                                     </Tooltip>
                                 </div>
                             </div>
                         ))}
                         <RippleButton onClick={addNewPath} className="btn text">
-                            <Plus className="icon" size={14} /> 새 Path 추가
+                            <Plus className="icon" size={14} /> Add New Path
                         </RippleButton>
                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".svg" hidden />
                         <RippleButton onClick={() => fileInputRef.current?.click()} className="btn text">
-                            <Upload className="icon" size={14} /> SVG 파일 가져오기
+                            <Upload className="icon" size={14} /> Import SVG File
                         </RippleButton>
                     </div>
                 </section>
@@ -3043,20 +3043,20 @@ export default function Home() {
                         <div className="section-header">
                             {/* <h2 className="section-title">미리보기</h2> */}
                             <div className="toggle-btn">
-                                <Tooltip content="포인트 편집 모드로 전환" position="bottom">
+                                <Tooltip content="Switch to Point Editing Mode" position="bottom">
                                     <RippleButton
                                         className={`btn toggle ${!isAnimationMode ? "primary" : "text"}`}
                                         onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     >
-                                        포인트 편집
+                                        Point Editing
                                     </RippleButton>
                                 </Tooltip>
-                                <Tooltip content="애니메이션 모드로 전환" position="bottom">
+                                <Tooltip content="Switch to Animation Mode" position="bottom">
                                     <RippleButton
                                         className={`btn toggle ${!isAnimationMode ? "text" : "primary"}`}
                                         onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     >
-                                        애니메이션
+                                        Animation Test
                                     </RippleButton>
                                 </Tooltip>
                             </div>
@@ -3064,7 +3064,7 @@ export default function Home() {
 
                         {!isAnimationMode ? (
                             <>
-                                {/* 포인트 편집 모드 */}
+                                {/* Point Editing Mode */}
                                 <div className="section-header">
                                     {previewIndex !== null ? (
                                         <>
@@ -3074,16 +3074,16 @@ export default function Home() {
                                                 <span className="chip">{currentPath.length} Characters</span>
                                             </div>
                                             <div className="button-wrap">
-                                                <Tooltip content="되돌리기 (Ctrl+Z)" position="bottom">
+                                                <Tooltip content="Undo (Ctrl+Z)" position="bottom">
                                                     <RippleButton
-                                                        onCick={undo}
+                                                        onClick={undo}
                                                         disabled={historyIndex <= 0}
                                                         className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
                                                     >
                                                         <Undo2 className="icon" size={14} />
                                                     </RippleButton>
                                                 </Tooltip>
-                                                <Tooltip content="다시실행 (Ctrl+Shift+Z)" position="bottom">
+                                                <Tooltip content="Redo (Ctrl+Shift+Z)" position="bottom">
                                                     <RippleButton
                                                         onClick={redo}
                                                         disabled={historyIndex >= pathHistory.length - 1}
@@ -3092,26 +3092,26 @@ export default function Home() {
                                                         <Redo2 className="icon" size={14} />
                                                     </RippleButton>
                                                 </Tooltip>
-                                                <Tooltip content="선택된 점을 시작점으로 설정" position="bottom">
+                                                <Tooltip content="Set selected point as start point" position="bottom">
                                                     <RippleButton
                                                         className="btn primary"
                                                         onClick={handleSetStartPoint}
                                                         disabled={selectedIndex === null}
                                                     >
-                                                        시작점 설정
+                                                        Set Start Point
                                                     </RippleButton>
                                                 </Tooltip>
                                             </div>
                                         </>
                                     ) : (
-                                        <div className="no-data">미리보기를 켜주세요</div>
+                                        <div className="no-data">Please turn on preview</div>
                                     )}
                                 </div>
                                 {previewIndex !== null ? (
                                     <div className="preview-container">
                                         {currentPath.trim() ? (
                                             <>
-                                                {/* 포인트 리스트 */}
+                                                {/* Point List */}
                                                 <div className="point-list">
                                                     <h3 className="point-list-title">Points</h3>
                                                     <div className="point-items">
@@ -3122,7 +3122,7 @@ export default function Home() {
                                                                     i === currentStartIndex ? "start" : ""
                                                                 }`}
                                                                 onClick={() => setSelectedIndex(i)}
-                                                                title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
+                                                                title={`Point ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
                                                             >
                                                                 <span className="point-number">{i}</span>
                                                                 <span className="point-coords">
@@ -3133,7 +3133,7 @@ export default function Home() {
                                                     </div>
                                                 </div>
                                                 {/* SVG 미리보기 */}
-                                                {/* 포인트 편집 모드 */}
+                                                {/* Point Editing Mode */}
                                                 <div className="preview">
                                                     <svg
                                                         ref={svgRef}
@@ -3205,7 +3205,7 @@ export default function Home() {
                                                     style={{ userSelect: "none" }}
                                                 >
                                                     <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="9">
-                                                        Path를 추가해주세요
+                                                        Please add a path
                                                     </text>
                                                 </svg>
                                             </div>
@@ -3215,11 +3215,11 @@ export default function Home() {
                             </>
                         ) : (
                             <>
-                                {/* 애니메이션 모드 */}
+                                {/* Animation Mode */}
                                 {paths.length >= 2 && (
                                     <div className="animation-controls">
                                         <div className="wrap">
-                                            <label className="label">시작 Path</label>
+                                            <label className="label">Start Path</label>
                                             <select
                                                 value={morphingFromIndex}
                                                 onChange={(e) => setMorphingFromIndex(parseInt(e.target.value))}
@@ -3231,7 +3231,7 @@ export default function Home() {
                                                     </option>
                                                 ))}
                                             </select>
-                                            <label className="label">끝 Path</label>
+                                            <label className="label">End Path</label>
                                             <select
                                                 value={morphingToIndex}
                                                 onChange={(e) => setMorphingToIndex(parseInt(e.target.value))}
@@ -3245,7 +3245,7 @@ export default function Home() {
                                             </select>
 
                                             <div className="button-wrap">
-                                                <Tooltip content={isAnimating ? "일시정지" : "재생"} position="bottom">
+                                                <Tooltip content={isAnimating ? "Pause" : "Play"} position="bottom">
                                                     <RippleButton
                                                         onClick={toggleAnimation}
                                                         className={"btn icon primary"}
@@ -3262,7 +3262,7 @@ export default function Home() {
                                                         )}
                                                     </RippleButton>
                                                 </Tooltip>
-                                                <Tooltip content="정지" position="bottom">
+                                                <Tooltip content="Stop" position="bottom">
                                                     <RippleButton
                                                         onClick={resetAnimation}
                                                         className="btn icon secondary"
@@ -3274,7 +3274,7 @@ export default function Home() {
                                             </div>
                                         </div>
                                         <div className="wrap" style={{ margin: "1rem 0" }}>
-                                            <label className="label">애니메이션 진행</label>
+                                            <label className="label">Animation Progress</label>
                                             <input
                                                 type="range"
                                                 min={0}
@@ -3288,7 +3288,7 @@ export default function Home() {
                                             </span>
                                         </div>
                                         <div className="wrap" style={{ margin: "1rem 0 2rem" }}>
-                                            <label className="label">애니메이션 속도</label>
+                                            <label className="label">Animation Speed</label>
                                             <input
                                                 type="range"
                                                 min={0.5}
