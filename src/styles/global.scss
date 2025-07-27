@@ -110,7 +110,9 @@ body {
     display: flex;
     align-items: flex-start;
     justify-content: space-between;
-    margin-bottom: 2rem;
+    & + * {
+        margin-top: 2rem;
+    }
 }
 
 .chip {
@@ -223,7 +225,6 @@ body {
     display: flex;
     border-radius: 10px;
     background: #222;
-    padding: 4px;
     height: 3.6rem;
     .btn {
         width: 100%;
@@ -492,13 +493,6 @@ select {
                 opacity: 0.8;
             }
         }
-
-        .no-points {
-            text-align: center;
-            color: #666;
-            font-style: italic;
-            padding: 2rem 1rem;
-        }
     }
     .preview {
         background: #222;
@@ -508,13 +502,18 @@ select {
         flex: 1;
     }
 }
+.no-data {
+    text-align: center;
+    color: #999;
+    font-size: 1.4rem;
+    line-height: 3.6rem;
+}
 
 /* Path Info */
 .path-info {
     background: var(--color-surface-elevated);
     border-radius: 8px;
     border: 1px solid var(--color-border);
-    margin-bottom: 1rem;
     display: flex;
     align-items: center;
     gap: 1rem;

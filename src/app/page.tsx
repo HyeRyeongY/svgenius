@@ -12,12 +12,11 @@ import {
     Play,
     Undo2,
     Redo2,
-    Target,
     Copy,
-    Check,
+    Circle,
+    CircleDot,
     Github,
-    FileText,
-    HelpCircle,
+    BookAlert,
 } from "lucide-react";
 import Tooltip from "../components/Tooltip";
 import { gsap } from "gsap";
@@ -2799,7 +2798,7 @@ export default function Home() {
                     <div className="sns">
                         <Tooltip content="도움말" position="bottom">
                             <a
-                                href="#"
+                                href="https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727"
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 style={{
@@ -2814,7 +2813,7 @@ export default function Home() {
                                 onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                                 onMouseLeave={(e) => (e.currentTarget.style.color = "#a0a0a0")}
                             >
-                                <HelpCircle size={20} />
+                                <BookAlert size={20} />
                             </a>
                         </Tooltip>
                         <Tooltip content="GitHub" position="bottom">
@@ -2837,7 +2836,7 @@ export default function Home() {
                                 <Github size={20} />
                             </a>
                         </Tooltip>
-                        <Tooltip content="Notion" position="bottom">
+                        {/* <Tooltip content="Notion" position="bottom">
                             <a
                                 href="https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727"
                                 target="_blank"
@@ -2868,7 +2867,7 @@ export default function Home() {
                                     />
                                 </svg>
                             </a>
-                        </Tooltip>
+                        </Tooltip> */}
                     </div>
                     <p style={{ fontSize: "1.2rem", color: "#666", marginTop: "0.5rem" }}>
                         © 2025 Yoonhr. All rights reserved.
@@ -2966,9 +2965,9 @@ export default function Home() {
                                             >
                                                 <span>미리보기</span>
                                                 {previewIndex === index ? (
-                                                    <Check className="icon" size={14} />
+                                                    <CircleDot className="icon" size={14} />
                                                 ) : (
-                                                    <Square className="icon" size={14} />
+                                                    <Circle className="icon" size={14} />
                                                 )}
                                             </button>
                                         </Tooltip>
@@ -3062,127 +3061,149 @@ export default function Home() {
                             <>
                                 {/* 포인트 편집 모드 */}
                                 <div className="section-header">
-                                    {previewIndex !== null && (
-                                        <div className="path-info">
-                                            <div className="path-info-title">Path {previewIndex + 1}</div>
-                                            <span className="chip">{anchorPoints.length} Points</span>
-                                            <span className="chip">{currentPath.length} Characters</span>
-                                        </div>
+                                    {previewIndex !== null ? (
+                                        <>
+                                            <div className="path-info">
+                                                <div className="path-info-title">Path {previewIndex + 1}</div>
+                                                <span className="chip">{anchorPoints.length} Points</span>
+                                                <span className="chip">{currentPath.length} Characters</span>
+                                            </div>
+                                            <div className="button-wrap">
+                                                <Tooltip content="되돌리기 (Ctrl+Z)" position="bottom">
+                                                    <button
+                                                        onClick={undo}
+                                                        disabled={historyIndex <= 0}
+                                                        className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
+                                                    >
+                                                        <Undo2 className="icon" size={14} />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="다시실행 (Ctrl+Shift+Z)" position="bottom">
+                                                    <button
+                                                        onClick={redo}
+                                                        disabled={historyIndex >= pathHistory.length - 1}
+                                                        className={`btn secondary icon ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
+                                                    >
+                                                        <Redo2 className="icon" size={14} />
+                                                    </button>
+                                                </Tooltip>
+                                                <Tooltip content="선택된 점을 시작점으로 설정" position="bottom">
+                                                    <button
+                                                        className="btn primary"
+                                                        onClick={handleSetStartPoint}
+                                                        disabled={selectedIndex === null}
+                                                    >
+                                                        시작점 설정
+                                                    </button>
+                                                </Tooltip>
+                                            </div>
+                                        </>
+                                    ) : (
+                                        <div className="no-data">미리보기를 켜주세요</div>
                                     )}
-                                    <div className="button-wrap">
-                                        <Tooltip content="되돌리기 (Ctrl+Z)" position="bottom">
-                                            <button
-                                                onClick={undo}
-                                                disabled={historyIndex <= 0}
-                                                className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
-                                            >
-                                                <Undo2 className="icon" size={14} />
-                                            </button>
-                                        </Tooltip>
-                                        <Tooltip content="다시실행 (Ctrl+Shift+Z)" position="bottom">
-                                            <button
-                                                onClick={redo}
-                                                disabled={historyIndex >= pathHistory.length - 1}
-                                                className={`btn secondary icon ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
-                                            >
-                                                <Redo2 className="icon" size={14} />
-                                            </button>
-                                        </Tooltip>
-                                        <Tooltip content="선택된 점을 시작점으로 설정" position="bottom">
-                                            <button
-                                                className="btn primary"
-                                                onClick={handleSetStartPoint}
-                                                disabled={selectedIndex === null}
-                                            >
-                                                <Target className="icon" size={14} />
-                                                시작점 설정
-                                            </button>
-                                        </Tooltip>
-                                    </div>
                                 </div>
                                 <div className="preview-container">
-                                    {/* 포인트 리스트 */}
-                                    <div className="point-list">
-                                        <h3 className="point-list-title">Points</h3>
-                                        <div className="point-items">
-                                            {anchorPoints.length > 0 ? (
-                                                anchorPoints.map((pt, i) => (
-                                                    <button
-                                                        key={i}
-                                                        className={`point-item ${i === selectedIndex ? "selected" : ""} ${
-                                                            i === currentStartIndex ? "start" : ""
-                                                        }`}
-                                                        onClick={() => setSelectedIndex(i)}
-                                                        title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
-                                                    >
-                                                        <span className="point-number">{i}</span>
-                                                        <span className="point-coords">
-                                                            x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
-                                                        </span>
-                                                    </button>
-                                                ))
-                                            ) : (
-                                                <div className="no-points">포인트가 없습니다</div>
-                                            )}
-                                        </div>
-                                    </div>
-                                    {/* SVG 미리보기 */}
-                                    {/* 포인트 편집 모드 */}
-                                    <div className="preview">
-                                        <svg
-                                            ref={svgRef}
-                                            viewBox={viewBox}
-                                            width="100%"
-                                            height="100%"
-                                            style={{ userSelect: "none" }}
-                                        >
-                                            {currentPath ? (
+                                    {previewIndex !== null ? (
+                                        <>
+                                            {currentPath.trim() ? (
                                                 <>
-                                                    <path d={currentPath} fill="black" stroke="black" strokeWidth={2} />
-                                                    {anchorPoints.map((pt, i) => (
-                                                        <g
+                                                    {/* 포인트 리스트 */}
+                                                    <div className="point-list">
+                                                        <h3 className="point-list-title">Points</h3>
+                                                        <div className="point-items">
+                                                            {anchorPoints.map((pt, i) => (
+                                                        <button
                                                             key={i}
-                                                            style={{
-                                                                cursor:
-                                                                    isDragging && dragIndex === i ? "grabbing" : "grab",
-                                                            }}
-                                                            onMouseDown={(e) => handleMouseDown(e, i)}
+                                                            className={`point-item ${i === selectedIndex ? "selected" : ""} ${
+                                                                i === currentStartIndex ? "start" : ""
+                                                            }`}
+                                                            onClick={() => setSelectedIndex(i)}
+                                                            title={`포인트 ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
                                                         >
-                                                            <circle
-                                                                cx={pt.x}
-                                                                cy={pt.y}
-                                                                r={4}
-                                                                fill={i === currentStartIndex ? "#FFBB00" : "#666"}
-                                                                stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
-                                                                strokeWidth={i === selectedIndex ? 2 : 1}
-                                                            />
-                                                            <text
-                                                                x={pt.x}
-                                                                y={pt.y - 8}
-                                                                textAnchor="middle"
-                                                                fontSize="10"
-                                                                fill={
-                                                                    i === selectedIndex
-                                                                        ? "#FF4D47"
-                                                                        : i === currentStartIndex
-                                                                          ? "#FFBB00"
-                                                                          : "#ddd"
-                                                                }
-                                                                fontWeight="bold"
-                                                                style={{ pointerEvents: "none" }}
-                                                            >
-                                                                {i}
-                                                            </text>
-                                                        </g>
+                                                            <span className="point-number">{i}</span>
+                                                            <span className="point-coords">
+                                                                x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
+                                                            </span>
+                                                        </button>
                                                     ))}
+                                                </div>
+                                            </div>
+                                            {/* SVG 미리보기 */}
+                                            {/* 포인트 편집 모드 */}
+                                            <div className="preview">
+                                                <svg
+                                                    ref={svgRef}
+                                                    viewBox={viewBox}
+                                                    width="100%"
+                                                    height="100%"
+                                                    style={{ userSelect: "none" }}
+                                                >
+                                                    <>
+                                                        <path
+                                                            d={currentPath}
+                                                            fill="black"
+                                                            stroke="black"
+                                                            strokeWidth={2}
+                                                        />
+                                                        {anchorPoints.map((pt, i) => (
+                                                            <g
+                                                                key={i}
+                                                                style={{
+                                                                    cursor:
+                                                                        isDragging && dragIndex === i
+                                                                            ? "grabbing"
+                                                                            : "grab",
+                                                                }}
+                                                                onMouseDown={(e) => handleMouseDown(e, i)}
+                                                            >
+                                                                <circle
+                                                                    cx={pt.x}
+                                                                    cy={pt.y}
+                                                                    r={4}
+                                                                    fill={i === currentStartIndex ? "#FFBB00" : "#666"}
+                                                                    stroke={i === selectedIndex ? "#FF4D47" : "#fff"}
+                                                                    strokeWidth={i === selectedIndex ? 2 : 1}
+                                                                />
+                                                                <text
+                                                                    x={pt.x}
+                                                                    y={pt.y - 8}
+                                                                    textAnchor="middle"
+                                                                    fontSize="9"
+                                                                    fill={
+                                                                        i === selectedIndex
+                                                                            ? "#FF4D47"
+                                                                            : i === currentStartIndex
+                                                                              ? "#FFBB00"
+                                                                              : "#ddd"
+                                                                    }
+                                                                    fontWeight="bold"
+                                                                    style={{ pointerEvents: "none" }}
+                                                                >
+                                                                    {i}
+                                                                </text>
+                                                            </g>
+                                                        ))}
+                                                    </>
+                                                </svg>
+                                            </div>
                                                 </>
                                             ) : (
-                                                <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
-                                                    경로를 추가하여 미리보기
-                                                </text>
+                                                <div className="preview">
+                                                    <svg
+                                                        ref={svgRef}
+                                                        viewBox={viewBox}
+                                                        width="100%"
+                                                        height="100%"
+                                                        style={{ userSelect: "none" }}
+                                                    >
+                                                        <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="14">
+                                                            Path를 추가해주세요
+                                                        </text>
+                                                    </svg>
+                                                </div>
                                             )}
-                                        </svg>
-                                    </div>
+                                        </>
+                                    ) : null}
                                 </div>
                             </>
                         ) : (
@@ -3285,7 +3306,7 @@ export default function Home() {
                                                     strokeWidth="1"
                                                 />
                                             ) : (
-                                                <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="12">
+                                                <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="9">
                                                     2개 이상의 경로가 필요합니다
                                                 </text>
                                             )}
