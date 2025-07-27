@@ -181,7 +181,7 @@ function exportPathAsSVG(path: string, index: number) {
     a.download = `svgenius-path-${index}.svg`;
     a.click();
     URL.revokeObjectURL(url);
-    toast.success(`#${index + 1} Path를 내보냈습니다`);
+    toast.success(`Exported Path #${index + 1}`);
 }
 
 function extractPathsFromSVG(svgContent: string): string[] {
@@ -2061,7 +2061,7 @@ export default function Home() {
         ],
     ]);
     const [historyIndex, setHistoryIndex] = useState(0);
-    const [isNormalized, setIsNormalized] = useState(false); // 정규화 상태 추적
+    const [isNormalized, setIsNormalized] = useState(false); // Track normalization state
     const [t, setT] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [animationSpeed, setAnimationSpeed] = useState(2);
@@ -2106,7 +2106,7 @@ export default function Home() {
             if (targetHistory && Array.isArray(targetHistory)) {
                 setHistoryIndex(newIndex);
                 setPaths([...targetHistory]);
-                setIsNormalized(false); // undo시 정규화 상태 해제
+                setIsNormalized(false); // Reset normalization state on undo
             }
         }
     }, [historyIndex, pathHistory]);
@@ -2119,7 +2119,7 @@ export default function Home() {
             if (targetHistory && Array.isArray(targetHistory)) {
                 setHistoryIndex(newIndex);
                 setPaths([...targetHistory]);
-                setIsNormalized(false); // redo시 정규화 상태 해제
+                setIsNormalized(false); // Reset normalization state on redo
             }
         }
     }, [historyIndex, pathHistory]);
@@ -2146,15 +2146,15 @@ export default function Home() {
         newPaths[index] = value;
         setPaths(newPaths);
         saveToHistory(newPaths);
-        setIsNormalized(false); // Path 수정시 정규화 상태 해제
+        setIsNormalized(false); // Reset normalization state on path modification
     };
 
     const addNewPath = () => {
         const newPaths = [...paths, ""];
         setPaths(newPaths);
         saveToHistory(newPaths);
-        setIsNormalized(false); // 새 Path 추가시 정규화 상태 해제
-        toast.success("새 Path가 추가되었습니다");
+        setIsNormalized(false); // Reset normalization state when adding new path
+        toast.success("New path added");
     };
 
     const removePath = (index: number) => {
@@ -2162,8 +2162,8 @@ export default function Home() {
             const newPaths = paths.filter((_, i) => i !== index);
             setPaths(newPaths);
             saveToHistory(newPaths);
-            setIsNormalized(false); // Path 삭제시 정규화 상태 해제
-            toast.success(`#${index} Path가 삭제되었습니다`);
+            setIsNormalized(false); // Reset normalization state when deleting path
+            toast.success(`Path #${index} deleted`);
         }
     };
 
@@ -2202,15 +2202,15 @@ export default function Home() {
                     const newPaths = [...paths, ...extractedPaths];
                     setPaths(newPaths);
                     saveToHistory(newPaths);
-                    setIsNormalized(false); // 파일 업로드시 정규화 상태 해제
-                    toast.success(`SVG 파일에서 ${extractedPaths.length}개의 Path를 추가했습니다`);
+                    setIsNormalized(false); // Reset normalization state on file upload
+                    toast.success(`Added ${extractedPaths.length} paths from SVG file`);
                 } else {
-                    toast.error("SVG 파일에 Path가 없습니다");
+                    toast.error("No paths found in SVG file");
                 }
             };
             reader.readAsText(file);
         } else {
-            toast.error("유효한 SVG 파일을 선택해주세요.");
+            toast.error("Please select a valid SVG file.");
         }
     };
 
@@ -2744,7 +2744,7 @@ export default function Home() {
             saveToHistory(newPaths);
             setCurrentStartIndex(0); // 재정렬 후 시작점을 0으로 리셋
             setSelectedIndex(null);
-            toast.success(`시작점을 #${selectedIndex}번 앵커로 재정의했습니다`);
+            toast.success(`Start point redefined to anchor #${selectedIndex}`);
         }
     };
 
@@ -2899,7 +2899,7 @@ export default function Home() {
                                         const normalized = normalizeAllPaths(paths);
                                         setPaths(normalized);
                                         saveToHistory(normalized);
-                                        setIsNormalized(true); // 정규화 완료 상태로 설정
+                                        setIsNormalized(true); // Set normalization completed state
                                         toast.success("All paths normalized to equal point counts");
                                     }}
                                     className="btn small primary"
@@ -2920,7 +2920,7 @@ export default function Home() {
                                     <label className="label">
                                         Path {index + 1}
                                         {(() => {
-                                            // 정규화 상태를 확인하는 조건들
+                                            // Conditions to check normalization state
                                             const hasValidPath = path.trim().length > 0;
                                             const allPointCounts = paths
                                                 .filter((p) => p.trim().length > 0)
