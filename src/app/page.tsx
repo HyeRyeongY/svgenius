@@ -19,6 +19,7 @@ import {
     BookAlert,
 } from "lucide-react";
 import Tooltip from "../components/Tooltip";
+import RippleButton from "../components/RippleButton";
 import { gsap } from "gsap";
 
 import Image from "next/image";
@@ -2893,7 +2894,7 @@ export default function Home() {
                                 })()}
                                 position="bottom"
                             >
-                                <button
+                                <RippleButton
                                     onClick={() => {
                                         const normalized = normalizeAllPaths(paths);
                                         setPaths(normalized);
@@ -2909,7 +2910,7 @@ export default function Home() {
                                     })()}
                                 >
                                     Points 정규화
-                                </button>
+                                </RippleButton>
                             </Tooltip>
                         </div>
 
@@ -2950,13 +2951,13 @@ export default function Home() {
                                     <div className="button-wrap" style={{ justifyContent: "flex-end" }}>
                                         {paths.length > 1 && (
                                             <Tooltip content="경로 삭제" position="bottom">
-                                                <button onClick={() => removePath(index)} className="btn danger small">
+                                                <RippleButton onClick={() => removePath(index)} className="btn danger small">
                                                     <span>삭제</span>
-                                                </button>
+                                                </RippleButton>
                                             </Tooltip>
                                         )}
                                         <Tooltip content={previewIndex === index ? "미리보기 끄기" : "미리보기 켜기"}>
-                                            <button
+                                            <RippleButton
                                                 onClick={() => {
                                                     setPreviewIndex((prev) => (prev === index ? null : index));
                                                 }}
@@ -2969,7 +2970,7 @@ export default function Home() {
                                                 ) : (
                                                     <Circle className="icon" size={14} />
                                                 )}
-                                            </button>
+                                            </RippleButton>
                                         </Tooltip>
                                     </div>
                                 </div>
@@ -2984,7 +2985,7 @@ export default function Home() {
                                         />
                                         <div className="copy-btn">
                                             <Tooltip content="Path 복사" position="bottom">
-                                                <button
+                                                <RippleButton
                                                     onClick={() => {
                                                         navigator.clipboard
                                                             .writeText(path)
@@ -3007,29 +3008,30 @@ export default function Home() {
                                                     }}
                                                 >
                                                     <Copy className="icon" size={14} />
-                                                </button>
+                                                </RippleButton>
                                             </Tooltip>
                                         </div>
                                     </div>
                                     <Tooltip content="SVG 파일로 내보내기" position="bottom">
-                                        <button
+                                        <RippleButton
                                             onClick={() => exportPathAsSVG(paths[index], index)}
                                             className="btn secondary export-btn"
+                                            disabled={!path.trim()}
                                         >
                                             <Download className="icon" size={14} />
                                             내보내기
-                                        </button>
+                                        </RippleButton>
                                     </Tooltip>
                                 </div>
                             </div>
                         ))}
-                        <button onClick={addNewPath} className="btn text">
+                        <RippleButton onClick={addNewPath} className="btn text">
                             <Plus className="icon" size={14} /> 새 경로 추가
-                        </button>
+                        </RippleButton>
                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".svg" hidden />
-                        <button onClick={() => fileInputRef.current?.click()} className="btn text">
+                        <RippleButton onClick={() => fileInputRef.current?.click()} className="btn text">
                             <Upload className="icon" size={14} /> SVG 파일 가져오기
-                        </button>
+                        </RippleButton>
                     </div>
                 </section>
 
@@ -3039,20 +3041,20 @@ export default function Home() {
                             {/* <h2 className="section-title">미리보기</h2> */}
                             <div className="toggle-btn">
                                 <Tooltip content="포인트 편집 모드로 전환" position="bottom">
-                                    <button
+                                    <RippleButton
                                         className={`btn toggle ${!isAnimationMode ? "primary" : "text"}`}
                                         onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     >
                                         포인트 편집
-                                    </button>
+                                    </RippleButton>
                                 </Tooltip>
                                 <Tooltip content="애니메이션 모드로 전환" position="bottom">
-                                    <button
+                                    <RippleButton
                                         className={`btn toggle ${!isAnimationMode ? "text" : "primary"}`}
                                         onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     >
                                         애니메이션
-                                    </button>
+                                    </RippleButton>
                                 </Tooltip>
                             </div>
                         </div>
@@ -3070,31 +3072,31 @@ export default function Home() {
                                             </div>
                                             <div className="button-wrap">
                                                 <Tooltip content="되돌리기 (Ctrl+Z)" position="bottom">
-                                                    <button
+                                                    <RippleButton
                                                         onClick={undo}
                                                         disabled={historyIndex <= 0}
                                                         className={`btn secondary icon ${historyIndex <= 0 ? "disabled" : ""}`}
                                                     >
                                                         <Undo2 className="icon" size={14} />
-                                                    </button>
+                                                    </RippleButton>
                                                 </Tooltip>
                                                 <Tooltip content="다시실행 (Ctrl+Shift+Z)" position="bottom">
-                                                    <button
+                                                    <RippleButton
                                                         onClick={redo}
                                                         disabled={historyIndex >= pathHistory.length - 1}
                                                         className={`btn secondary icon ${historyIndex >= pathHistory.length - 1 ? "disabled" : ""}`}
                                                     >
                                                         <Redo2 className="icon" size={14} />
-                                                    </button>
+                                                    </RippleButton>
                                                 </Tooltip>
                                                 <Tooltip content="선택된 점을 시작점으로 설정" position="bottom">
-                                                    <button
+                                                    <RippleButton
                                                         className="btn primary"
                                                         onClick={handleSetStartPoint}
                                                         disabled={selectedIndex === null}
                                                     >
                                                         시작점 설정
-                                                    </button>
+                                                    </RippleButton>
                                                 </Tooltip>
                                             </div>
                                         </>
@@ -3112,7 +3114,7 @@ export default function Home() {
                                                         <h3 className="point-list-title">Points</h3>
                                                         <div className="point-items">
                                                             {anchorPoints.map((pt, i) => (
-                                                        <button
+                                                        <RippleButton
                                                             key={i}
                                                             className={`point-item ${i === selectedIndex ? "selected" : ""} ${
                                                                 i === currentStartIndex ? "start" : ""
@@ -3124,7 +3126,7 @@ export default function Home() {
                                                             <span className="point-coords">
                                                                 x: {pt.x.toFixed(1)}, y: {pt.y.toFixed(1)}
                                                             </span>
-                                                        </button>
+                                                        </RippleButton>
                                                     ))}
                                                 </div>
                                             </div>
@@ -3239,7 +3241,11 @@ export default function Home() {
 
                                             <div className="button-wrap">
                                                 <Tooltip content={isAnimating ? "일시정지" : "재생"} position="bottom">
-                                                    <button onClick={toggleAnimation} className={"btn icon primary"}>
+                                                    <RippleButton 
+                                                        onClick={toggleAnimation} 
+                                                        className={"btn icon primary"}
+                                                        disabled={paths.filter(p => p.trim()).length < 2}
+                                                    >
                                                         {isAnimating ? (
                                                             <>
                                                                 <Pause size={16} />
@@ -3249,12 +3255,16 @@ export default function Home() {
                                                                 <Play size={16} />
                                                             </>
                                                         )}
-                                                    </button>
+                                                    </RippleButton>
                                                 </Tooltip>
                                                 <Tooltip content="정지" position="bottom">
-                                                    <button onClick={resetAnimation} className="btn icon secondary">
+                                                    <RippleButton 
+                                                        onClick={resetAnimation} 
+                                                        className="btn icon secondary"
+                                                        disabled={paths.filter(p => p.trim()).length < 2}
+                                                    >
                                                         <Square size={16} />
-                                                    </button>
+                                                    </RippleButton>
                                                 </Tooltip>
                                             </div>
                                         </div>
