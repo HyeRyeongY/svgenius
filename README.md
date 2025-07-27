@@ -12,26 +12,39 @@ SVGenius is an advanced SVG editing tool that enables precise start point redefi
 - 100% shape preservation
 - Complete curve and detail retention
 
+**Path Normalization**
+- Automatic point count normalization across multiple paths
+- Intelligent path optimization for smooth morphing
+- Real-time point count balancing
+
 **File Management**
 - Drag & drop SVG file import
 - Individual path SVG export
-- Real-time preview
+- Real-time preview with instant visual feedback
 
 **Interactive Point Editing**
 - Drag & drop point positioning with real-time preview
 - Smart drag detection (3px threshold)
 - Global mouse tracking for smooth dragging
-- Visual feedback with cursor states
+- Visual feedback with cursor states and tooltips
 
 **Multi-Path Support**
 - Simultaneous editing of multiple paths
 - Independent path management
 - Real-time point count display
+- Copy functionality for individual paths
 
 **Animation Preview**
 - Path morphing animation visualization
 - Speed control (0.5x ~ 5.0x)
+- Play/pause/stop controls with intuitive UI
 - Instant result verification
+
+**Enhanced User Experience**
+- Comprehensive tooltip system for all interactive elements
+- Undo/Redo functionality with keyboard shortcuts
+- Responsive design with optimized layout
+- Korean UI support with bilingual documentation
 
 ---
 
@@ -42,7 +55,7 @@ SVG morphing animations require:
 - Equal point counts for smooth interpolation
 - Perfect shape preservation during transformation
 
-SVGenius automates the complex manual process with an intelligent path reordering system.
+SVGenius automates the complex manual process with an intelligent path reordering system and provides intuitive visual tools for precise control.
 
 ---
 
@@ -66,10 +79,12 @@ Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Tech Stack
 
-- **Next.js 14** (App Router) + **TypeScript**
-- **React 18** + **SCSS Modules**
-- **Lucide Icons** + **Sonner** (Toast)
+- **Next.js 15** (App Router) + **TypeScript**
+- **React 19** + **SCSS Modules**
+- **Lucide Icons** + **Sonner** (Toast notifications)
+- **GSAP** (Animation library)
 - **Custom SVG Parser** - Proprietary SVG path analysis engine
+- **Flubber** - Path interpolation for smooth morphing
 
 ---
 
@@ -81,6 +96,8 @@ svgenius/
 │   ├── app/
 │   │   ├── layout.tsx      # Main layout
 │   │   └── page.tsx        # Main page (SVGenius component)
+│   ├── components/
+│   │   └── Tooltip.tsx     # Custom tooltip component
 │   └── styles/
 │       └── global.scss     # Global styles
 ├── public/
@@ -111,23 +128,35 @@ Complete support for all standard SVG path commands:
 ## Usage
 
 ### Step 1: Import SVG
-1. Click "Select SVG File" button
+1. Click "SVG 파일 가져오기" button or drag & drop SVG files
 2. Upload desired SVG file
 3. Paths are automatically extracted and displayed
 
-### Step 2: Path Selection and Preview
-1. Click the play button for the path you want to edit
-2. View path and anchor points in the preview panel
+### Step 2: Path Normalization (Optional)
+1. Click "Points 정규화" button to normalize point counts across all paths
+2. This ensures smooth morphing between paths with different complexities
+3. View normalized point counts in real-time
 
-### Step 3: Point Modification
+### Step 3: Path Selection and Preview
+1. Click the "미리보기" toggle button for the path you want to edit
+2. View path and anchor points in the preview panel
+3. Switch between "포인트 편집" and "애니메이션" modes
+
+### Step 4: Point Modification
 1. **Select Point**: Click desired anchor point in preview (turns red)
 2. **Drag Point**: Drag the selected point to desired position for real-time path editing
-3. **Set Start Point**: Click "Set Start Point" button to reorder path to selected anchor
+3. **Set Start Point**: Click "시작점 설정" button to reorder path to selected anchor
 4. Changes are automatically saved with undo/redo support
 
-### Step 4: Export Results
-1. Verify reordered path
-2. Download SVG file using export button
+### Step 5: Animation Testing
+1. Switch to "애니메이션" mode
+2. Use play/pause/stop controls to test morphing animations
+3. Adjust animation speed (0.5x ~ 5.0x) for optimal preview
+
+### Step 6: Export Results
+1. Verify reordered and optimized paths
+2. Use "내보내기" button to download individual SVG files
+3. Copy paths to clipboard using the copy button
 
 ---
 
@@ -136,17 +165,19 @@ Complete support for all standard SVG path commands:
 **Web Animation Development**
 - Compatible with CSS transitions and JavaScript libraries
 - Works with GSAP, Framer Motion, Lottie, and all animation frameworks
-- Enables natural morphing effects
+- Enables natural morphing effects with optimized paths
 
 **Design Workflow Enhancement**
 - Unifies start points across icon sets
 - Optimizes drawing order for complex SVG icons
 - Minimizes file size for better performance
+- Streamlines design-to-development handoff
 
 **Development Efficiency**
-- Eliminates manual correction time
+- Eliminates manual path correction time
 - Accelerates design-to-code workflow
 - Provides instant feedback through real-time preview
+- Reduces debugging time for animation implementations
 
 ---
 
@@ -160,21 +191,25 @@ Complete support for all standard SVG path commands:
 
 ## Version
 
-**Current Version: v1.1.0**
+**Current Version: v1.2.0**
 
-- Interactive point drag & drop editing
-- Start point redefinition functionality
-- Real-time path modification
-- Curve preservation algorithm
-- Real-time preview
-- Animation controls
-- Multi-path support
-- Undo/Redo system
-- Korean UI support
+- Enhanced tooltip system for improved user experience
+- Path normalization with intelligent point balancing
+- Advanced copy functionality for individual paths
+- Improved animation controls with better visual feedback
+- Korean UI with comprehensive tooltips
+- Responsive design optimizations
 
 ---
 
 ## Version History
+
+### v1.2.0 (2025-07-27)
+**Enhanced User Experience**
+- Comprehensive tooltip system for all interactive elements
+- Improved visual feedback and user guidance
+- Enhanced copy functionality with clipboard integration
+- Better responsive design and layout optimization
 
 ### v1.1.0 (2025-07-24)
 **Interactive Point Editing**
@@ -215,31 +250,40 @@ Complete support for all standard SVG path commands:
 - **Smart Drag Detection**: 3-pixel threshold to distinguish clicks from drags
 - **Point Update Algorithm**: Comprehensive SVG command modification for all path types
 
+**User Interface Enhancements**
+- **Tooltip System**: Context-aware tooltips for all interactive elements
+- **Visual Feedback**: Hover effects, state indicators, and smooth transitions
+- **Responsive Design**: Optimized for various screen sizes and devices
+- **Accessibility**: Keyboard navigation and screen reader support
+
 **Core Algorithms**
 - **Curve Preservation**: Perfect preservation of all curve types including Bézier and quadratic curves
 - **Intelligent Optimization**: Automatic removal of unnecessary commands for efficient path generation
 - **Coordinate Processing**: Support for various SVG command formats (relative/absolute coordinates)
+- **Path Normalization**: Advanced algorithm for balancing point counts across multiple paths
 
 **Custom SVG Parser**
 - Proprietary SVG path analysis engine supporting all SVG commands
 - Real-time path analysis and optimization
-- Type-safe parsing system
+- Type-safe parsing system with comprehensive error handling
 
 ---
 
 ## Contact
 
-**Developer**: HyeRyeong Yoon
-**Portfolio Link** : [yoonhr portfolio](https://yoonhr.com/)
+**Developer**: HyeRyeong Yoon  
+**Portfolio**: [yoonhr.com](https://yoonhr.com/)  
+**GitHub**: [github.com/HyeRyeongY](https://github.com/HyeRyeongY)
 
 ---
 
-## Docs
-**User Guide Link (KOR)**: [SVGenius 사용자 가이드](https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727)
-**Tech Portfolio Link (KOR)**: [SVGenius 기술 포트폴리오](https://www.notion.so/SVGenius-239a784e4dc2806486f8e2046b64463a)
+## Documentation
+
+**사용자 가이드 (KOR)**: [SVGenius 사용자 가이드](https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727)  
+**기술 포트폴리오 (KOR)**: [SVGenius 기술 포트폴리오](https://www.notion.so/SVGenius-239a784e4dc2806486f8e2046b64463a)
 
 ---
 
 ## Keywords
 
-`SVG` `path manipulation` `morphing` `animation` `design tools` `vector graphics` `bezier curves` `anchor points` `real-time preview` `UI animation` `design workflow` `frontend development`
+`SVG` `path manipulation` `morphing` `animation` `design tools` `vector graphics` `bezier curves` `anchor points` `real-time preview` `UI animation` `design workflow` `frontend development` `point normalization` `interactive editing` `tooltip system`
