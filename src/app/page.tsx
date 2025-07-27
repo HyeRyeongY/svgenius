@@ -3328,7 +3328,7 @@ export default function Home() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="no-data">2개 이상의 Path가 필요합니다</div>
+                                    <div className="no-data">At least 2 paths are required</div>
                                 )}
                             </>
                         )}
