@@ -2959,7 +2959,10 @@ export default function Home() {
                                                 </RippleButton>
                                             </Tooltip>
                                         )}
-                                        <Tooltip content={previewIndex === index ? "Hide Preview" : "Show Preview"}>
+                                        <Tooltip
+                                            content={previewIndex === index ? "Hide Preview" : "Show Preview"}
+                                            position="bottom"
+                                        >
                                             <RippleButton
                                                 onClick={() => {
                                                     setPreviewIndex((prev) => (prev === index ? null : index));
