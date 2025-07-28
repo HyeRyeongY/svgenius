@@ -2469,7 +2469,7 @@ function HomeContent() {
             // Show tutorial only on first visit of the day with empty paths
             setShowTutorial(true);
         }
-    }, []);
+    }, [paths]);
 
     const handleCloseTutorial = () => {
         setShowTutorial(false);
