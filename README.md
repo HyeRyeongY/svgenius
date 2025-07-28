@@ -41,10 +41,12 @@ SVGenius is an advanced SVG editing tool that enables precise start point redefi
 - Instant result verification
 
 **Enhanced User Experience**
+- Interactive tutorial system with step-by-step guidance
 - Comprehensive tooltip system for all interactive elements
+- Bilingual support (English/Korean) with language toggle
 - Undo/Redo functionality with keyboard shortcuts
 - Responsive design with optimized layout
-- English UI with intuitive design
+- Smooth animations and transitions throughout the interface
 
 ---
 
@@ -83,6 +85,7 @@ npm run dev
 - **GSAP** (Animation library)
 - **Custom SVG Parser** - Proprietary SVG path analysis engine
 - **Flubber** - Path interpolation for smooth morphing
+- **React Context API** - State management for language and tutorial systems
 
 ---
 
@@ -95,9 +98,14 @@ svgenius/
 │   │   ├── layout.tsx      # Main layout
 │   │   └── page.tsx        # Main page (SVGenius component)
 │   ├── components/
-│   │   └── Tooltip.tsx     # Custom tooltip component
+│   │   ├── Tooltip.tsx     # Custom tooltip component
+│   │   ├── Tutorial.tsx    # Interactive tutorial system
+│   │   ├── RippleButton.tsx # Enhanced button with ripple effects
+│   │   └── LanguageToggle.tsx # Language switcher component
+│   ├── contexts/
+│   │   └── LanguageContext.tsx # Internationalization context
 │   └── styles/
-│       └── global.scss     # Global styles
+│       └── global.scss     # Global styles with animations
 ├── public/
 │   ├── SVGenius.svg        # Logo
 │   └── ...
@@ -124,6 +132,12 @@ Complete support for all standard SVG path commands:
 ---
 
 ## Usage
+
+### Step 0: Tutorial (For New Users)
+1. Click "Show Tutorial" button in the header to start the interactive guide
+2. Follow the 5-step tutorial to learn the complete workflow
+3. Tutorial provides demo paths for safe practice without affecting your data
+4. Switch languages using the EN/KO toggle in the top-right corner
 
 ### Step 1: Import SVG
 1. Click "Import SVG File" button or drag & drop SVG files
@@ -189,18 +203,35 @@ Complete support for all standard SVG path commands:
 
 ## Version
 
-**Current Version: v1.3.0**
+**Current Version: v1.4.0**
 
-- Enhanced tooltip system for improved user experience
-- Path normalization with intelligent point balancing
-- Advanced copy functionality for individual paths
-- Improved animation controls with better visual feedback
-- English UI with comprehensive tooltips
-- Responsive design optimizations
+- Interactive tutorial system with step-by-step guidance
+- Bilingual support (English/Korean) with language toggle
+- Smooth tutorial transitions with fade effects
+- Improved user onboarding experience
+- Enhanced UI components with ripple effects
+- Tutorial mode with demo paths for quick testing
 
 ---
 
 ## Version History
+
+### v1.4.0 (2025-07-28)
+**Tutorial System & Internationalization**
+- Interactive tutorial system with 5-step guided tour
+- Real-time tutorial tooltips with smart positioning
+- Smooth fade-in/out transitions between tutorial steps
+- Bilingual support (English/Korean) with persistent language selection
+- Tutorial mode with separate demo paths to prevent data mixing
+- Read-only tutorial interface for safe learning experience
+- Enhanced UI with ripple button effects and improved animations
+
+**Technical Improvements**
+- TypeScript strict mode compliance with proper type safety
+- ESLint configuration optimization for production builds
+- Improved state management for tutorial and language contexts
+- Enhanced CSS animations with keyframes and transitions
+- Optimized component architecture for better performance
 
 ### v1.3.0 (2025-07-27)
 **UI/UX Enhancements**
@@ -212,6 +243,8 @@ Complete support for all standard SVG path commands:
 **Enhanced User Experience**
 - Comprehensive tooltip system for all interactive elements
 - Improved visual feedback and user guidance
+- Interactive tutorial system for new users
+- Bilingual UI support (English/Korean)
 - Enhanced copy functionality with clipboard integration
 - Better responsive design and layout optimization
 
