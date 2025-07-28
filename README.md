@@ -80,12 +80,12 @@ npm run dev
 ## Tech Stack
 
 - **Next.js 15** (App Router) + **TypeScript**
-- **React 19** + **SCSS Modules**
-- **Lucide Icons** + **Sonner** (Toast notifications)
+- **SCSS**
+- **Lucide Icons**
+- **Sonner** (Toast notifications)
 - **GSAP** (Animation library)
-- **Custom SVG Parser** - Proprietary SVG path analysis engine
-- **Flubber** - Path interpolation for smooth morphing
-- **React Context API** - State management for language and tutorial systems
+- **svg-path-parser** (SVG path parsing)
+- **svg-path-properties** (SVG path property calculation)
 
 ---
 
