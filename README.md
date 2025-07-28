@@ -6,47 +6,31 @@ SVGenius is an advanced SVG editing tool that enables precise start point redefi
 
 ## Core Features
 
-**Start Point Redefinition**
-- One-click start point modification
-- Drag & drop point positioning
-- 100% shape preservation
-- Complete curve and detail retention
+### Start Point Redefinition
 
-**Path Normalization**
+- One-click SVG path start point modification
+- Drag & drop point positioning
+- 100% shape preservation and curve detail retention
+
+### Path Normalization
+
 - Automatic point count normalization across multiple paths
 - Intelligent path optimization for smooth morphing
 - Real-time point count balancing
 
-**File Management**
-- Drag & drop SVG file import
-- Individual path SVG export
-- Real-time preview with instant visual feedback
+### Animation Preview
 
-**Interactive Point Editing**
-- Drag & drop point positioning with real-time preview
-- Smart drag detection (3px threshold)
-- Global mouse tracking for smooth dragging
-- Visual feedback with cursor states and tooltips
-
-**Multi-Path Support**
-- Simultaneous editing of multiple paths
-- Independent path management
-- Real-time point count display
-- Copy functionality for individual paths
-
-**Animation Preview**
 - Path morphing animation visualization
 - Speed control (0.5x ~ 5.0x)
-- Play/pause/stop controls with intuitive UI
+- Intuitive play/pause/stop controls
 - Instant result verification
 
-**Enhanced User Experience**
-- Interactive tutorial system with step-by-step guidance
-- Comprehensive tooltip system for all interactive elements
-- Bilingual support (English/Korean) with language toggle
-- Undo/Redo functionality with keyboard shortcuts
-- Responsive design with optimized layout
-- Smooth animations and transitions throughout the interface
+### File Management
+
+- Individual path SVG export
+- Normalized path export (start/end/both)
+- Real-time preview
+- Clipboard copy functionality
 
 ---
 
@@ -139,36 +123,38 @@ Complete support for all standard SVG path commands:
 3. Tutorial provides demo paths for safe practice without affecting your data
 4. Switch languages using the EN/KO toggle in the top-right corner
 
-### Step 1: Import SVG
-1. Click "Import SVG File" button or drag & drop SVG files
-2. Upload desired SVG file
-3. Paths are automatically extracted and displayed
+### Step 1: Add SVG Paths
+1. **Import SVG File**: Click "Import SVG File" button or drag & drop SVG files
+2. **Direct Input**: Paste SVG path data directly into the path text area
+3. **Add New Path**: Use "+" button to create additional path slots
+4. Paths are automatically extracted and displayed
 
-### Step 2: Path Normalization (Optional)
-1. Click "Normalize Points" button to normalize point counts across all paths
-2. This ensures smooth morphing between paths with different complexities
-3. View normalized point counts in real-time
-
-### Step 3: Path Selection and Preview
+### Step 2: Path Selection and Preview
 1. Click the "Preview" toggle button for the path you want to edit
 2. View path and anchor points in the preview panel
 3. Switch between "Point Editing" and "Animation" modes
 
-### Step 4: Point Modification
+### Step 3: Point Editing (Point Editing Mode)
 1. **Select Point**: Click desired anchor point in preview (turns red)
 2. **Drag Point**: Drag the selected point to desired position for real-time path editing
 3. **Set Start Point**: Click "Set Start Point" button to reorder path to selected anchor
-4. Changes are automatically saved with undo/redo support
+4. **Undo/Redo**: Use Ctrl+Z / Ctrl+Shift+Z or button clicks
+5. Changes are automatically saved
 
-### Step 5: Animation Testing
+### Step 4: Animation Testing (Animation Mode)
 1. Switch to "Animation" mode
-2. Use play/pause/stop controls to test morphing animations
-3. Adjust animation speed (0.5x ~ 5.0x) for optimal preview
+2. **Select Paths**: Choose start path → end path from dropdowns
+3. **Test Animation**: Click "Test Animation" button
+4. **Playback Controls**: Use play/pause/stop buttons
+5. **Speed Control**: Adjust animation speed with slider (0.5x ~ 5.0x)
 
-### Step 6: Export Results
-1. Verify reordered and optimized paths
-2. Use "Export" button to download individual SVG files
-3. Copy paths to clipboard using the copy button
+### Step 5: Export Results
+1. **Individual Path Export**: Use download button for each path to save SVG files
+2. **Normalized Path Export**:
+   - "Start Path" button: Export normalized start path only
+   - "End Path" button: Export normalized end path only
+   - "Both" button: Export both start and end paths
+3. **Clipboard Copy**: Use copy button to copy path data to clipboard
 
 ---
 
@@ -201,81 +187,47 @@ Complete support for all standard SVG path commands:
 
 ---
 
-## Version
+## Version Information
 
 **Current Version: v1.4.0**
 
-- Interactive tutorial system with step-by-step guidance
-- Bilingual support (English/Korean) with language toggle
-- Smooth tutorial transitions with fade effects
-- Improved user onboarding experience
-- Enhanced UI components with ripple effects
-- Tutorial mode with demo paths for quick testing
+- Interactive tutorial system with multilingual support (Korean/English)
+- Enhanced UI with ripple effects
 
 ---
 
-## Version History
+### Version History
 
-### v1.4.0 (2025-07-28)
-**Tutorial System & Internationalization**
-- Interactive tutorial system with 5-step guided tour
-- Real-time tutorial tooltips with smart positioning
-- Smooth fade-in/out transitions between tutorial steps
-- Bilingual support (English/Korean) with persistent language selection
-- Tutorial mode with separate demo paths to prevent data mixing
-- Read-only tutorial interface for safe learning experience
-- Enhanced UI with ripple button effects and improved animations
+**v1.4.0 (2025-07-28)**
 
-**Technical Improvements**
-- TypeScript strict mode compliance with proper type safety
-- ESLint configuration optimization for production builds
-- Improved state management for tutorial and language contexts
-- Enhanced CSS animations with keyframes and transitions
-- Optimized component architecture for better performance
+- 5-step guided tutorial system
+- Tutorial mode with demo data
+- Multilingual support (Korean/English)
+- Ripple button effects
 
-### v1.3.0 (2025-07-27)
-**UI/UX Enhancements**
-- Complete UI localization from Korean to English
-- Enhanced button states with proper disabled styling
-- Improved visual consistency across all interactive elements
+**v1.3.0 (2025-07-27)**
 
-### v1.2.0 (2025-07-27)
-**Enhanced User Experience**
-- Comprehensive tooltip system for all interactive elements
-- Improved visual feedback and user guidance
-- Interactive tutorial system for new users
-- Bilingual UI support (English/Korean)
-- Enhanced copy functionality with clipboard integration
-- Better responsive design and layout optimization
+- UI localization (Korean → English)
+- Enhanced button states and visual consistency
 
-### v1.1.0 (2025-07-24)
-**Interactive Point Editing**
-- Added drag & drop point positioning with real-time preview
-- Implemented smart drag detection (3px threshold)
-- Added global mouse tracking for smooth dragging experience
-- Enhanced visual feedback with cursor states (grab/grabbing)
-- Improved point selection with red highlight indication
-- Automatic history saving on drag completion
+**v1.2.0 (2025-07-27)**
 
-**Technical Improvements**
-- Advanced mouse event handling system
-- Precise SVG coordinate transformation
-- Comprehensive point update algorithm for all SVG command types
-- Performance optimizations for real-time editing
-- Enhanced error handling and stability
+- Tooltip system and visual feedback improvements
+- Tooltip system support
+- Clipboard copy functionality and responsive design optimization
 
-### v1.0.0 (2025-07-22)
-**Initial Release**
-- Start point redefinition functionality
-- Curve preservation algorithm
-- Real-time preview system
-- Animation controls with speed adjustment
-- Multi-path support and management
-- SVG file import/export capabilities
-- Undo/Redo system implementation
-- Korean UI localization
-- Comprehensive SVG command support (M, L, H, V, C, Q, S, T, Z)
-- Custom SVG path parser engine
+**v1.1.0 (2025-07-24)**
+
+- Drag & drop point editing with smart detection
+- Visual feedback (cursor states, highlights) and history storage
+- Improved mouse event handling and SVG coordinate transformation
+
+**v1.0.0 (2025-07-22)**
+
+- Start point redefinition with curve preservation
+- Animation controls and preview system
+- Multi-path support, SVG import/export, undo/redo functionality
+- Korean UI and SVG command support (M, L, H, V, C, Q, S, T, Z)
 
 ---
 
