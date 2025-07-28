@@ -3,7 +3,7 @@
 import { ReactNode, useState } from "react";
 
 interface TooltipProps {
-    content: string;
+    content: string | (() => string | ReactNode) | ReactNode;
     children: ReactNode;
     position?: "top" | "bottom" | "left" | "right";
     delay?: number;
@@ -85,7 +85,7 @@ export default function Tooltip({ content, children, position = "top", delay = 3
                         ...getPositionStyles(),
                     }}
                 >
-                    {content}
+                    {typeof content === 'function' ? content() : content}
                 </div>
             )}
         </div>

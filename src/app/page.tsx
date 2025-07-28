@@ -184,6 +184,70 @@ function exportPathAsSVG(path: string, index: number) {
     toast.success(`Exported Path #${index + 1}`);
 }
 
+// 개별 정규화된 패스를 내보내는 함수
+function exportSingleNormalizedPath(path: string, morphingViewBox: string, pathIndex: number, pathType: "from" | "to") {
+    // 브라우저 환경에서만 실행되도록 체크
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    if (!path) {
+        toast.error("No normalized path available");
+        return;
+    }
+
+    const pathName = `normalized-${pathType}-path-${pathIndex + 1}`;
+    const svg = `<svg viewBox="${morphingViewBox}" xmlns="http://www.w3.org/2000/svg"><path d="${path}" fill="black"/></svg>`;
+    const blob = new Blob([svg], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${pathName}.svg`;
+    a.click();
+
+    URL.revokeObjectURL(url);
+
+    toast.success(`Normalized ${pathType} path exported successfully`);
+}
+
+// 정규화된 패스들을 모두 내보내는 함수
+function exportAllNormalizedPaths(
+    normalizedFromPath: string,
+    normalizedToPath: string,
+    morphingViewBox: string,
+    morphingFromIndex: number,
+    morphingToIndex: number
+) {
+    // 브라우저 환경에서만 실행되도록 체크
+    if (typeof window === "undefined") {
+        return;
+    }
+
+    if (!normalizedFromPath || !normalizedToPath) {
+        toast.error("No normalized paths available");
+        return;
+    }
+
+    const normalizedPaths = [normalizedFromPath, normalizedToPath];
+    const pathNames = [`normalized-from-path-${morphingFromIndex + 1}`, `normalized-to-path-${morphingToIndex + 1}`];
+
+    normalizedPaths.forEach((path, index) => {
+        const svg = `<svg viewBox="${morphingViewBox}" xmlns="http://www.w3.org/2000/svg"><path d="${path}" fill="black"/></svg>`;
+        const blob = new Blob([svg], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `${pathNames[index]}.svg`;
+        a.click();
+
+        URL.revokeObjectURL(url);
+    });
+
+    toast.success("All normalized paths exported successfully");
+}
+
 function extractPathsFromSVG(svgContent: string): string[] {
     // 브라우저 환경에서만 실행되도록 체크
     if (typeof window === "undefined") {
@@ -1701,6 +1765,116 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
     }
 }
 
+// 패스를 모두 C(CubicBezier) 명령어로 변환하는 함수 (곡선 품질 유지)
+function convertPathToCubicCurves(path: string): string {
+    try {
+        const commands = parsePathCommands(path);
+        let result = "";
+        let currentX = 0,
+            currentY = 0;
+
+        commands.forEach((cmd, index) => {
+            const isRelative = cmd.command === cmd.command.toLowerCase();
+            const cmdType = cmd.command.toUpperCase();
+
+            if (index === 0 && cmdType === "M") {
+                // 첫 번째 M 명령어는 그대로 유지
+                currentX = isRelative ? currentX + cmd.params[0] : cmd.params[0];
+                currentY = isRelative ? currentY + cmd.params[1] : cmd.params[1];
+                result += `M ${currentX.toFixed(3)} ${currentY.toFixed(3)} `;
+            } else {
+                switch (cmdType) {
+                    case "C":
+                        // 이미 C 명령어면 그대로 유지
+                        const cx1 = isRelative ? currentX + cmd.params[0] : cmd.params[0];
+                        const cy1 = isRelative ? currentY + cmd.params[1] : cmd.params[1];
+                        const cx2 = isRelative ? currentX + cmd.params[2] : cmd.params[2];
+                        const cy2 = isRelative ? currentY + cmd.params[3] : cmd.params[3];
+                        const cx3 = isRelative ? currentX + cmd.params[4] : cmd.params[4];
+                        const cy3 = isRelative ? currentY + cmd.params[5] : cmd.params[5];
+
+                        result += `C ${cx1.toFixed(3)} ${cy1.toFixed(3)} ${cx2.toFixed(3)} ${cy2.toFixed(3)} ${cx3.toFixed(3)} ${cy3.toFixed(3)} `;
+                        currentX = cx3;
+                        currentY = cy3;
+                        break;
+                    case "L":
+                        // 직선을 C 곡선으로 변환 (제어점이 직선 위에 있음)
+                        const lx = isRelative ? currentX + cmd.params[0] : cmd.params[0];
+                        const ly = isRelative ? currentY + cmd.params[1] : cmd.params[1];
+
+                        const lcp1x = currentX + (lx - currentX) * 0.33;
+                        const lcp1y = currentY + (ly - currentY) * 0.33;
+                        const lcp2x = currentX + (lx - currentX) * 0.67;
+                        const lcp2y = currentY + (ly - currentY) * 0.67;
+
+                        result += `C ${lcp1x.toFixed(3)} ${lcp1y.toFixed(3)} ${lcp2x.toFixed(3)} ${lcp2y.toFixed(3)} ${lx.toFixed(3)} ${ly.toFixed(3)} `;
+                        currentX = lx;
+                        currentY = ly;
+                        break;
+                    case "H":
+                        // 수평선을 C 곡선으로 변환
+                        const hx = isRelative ? currentX + cmd.params[0] : cmd.params[0];
+                        const hcp1x = currentX + (hx - currentX) * 0.33;
+                        const hcp2x = currentX + (hx - currentX) * 0.67;
+
+                        result += `C ${hcp1x.toFixed(3)} ${currentY.toFixed(3)} ${hcp2x.toFixed(3)} ${currentY.toFixed(3)} ${hx.toFixed(3)} ${currentY.toFixed(3)} `;
+                        currentX = hx;
+                        break;
+                    case "V":
+                        // 수직선을 C 곡선으로 변환
+                        const vy = isRelative ? currentY + cmd.params[0] : cmd.params[0];
+                        const vcp1y = currentY + (vy - currentY) * 0.33;
+                        const vcp2y = currentY + (vy - currentY) * 0.67;
+
+                        result += `C ${currentX.toFixed(3)} ${vcp1y.toFixed(3)} ${currentX.toFixed(3)} ${vcp2y.toFixed(3)} ${currentX.toFixed(3)} ${vy.toFixed(3)} `;
+                        currentY = vy;
+                        break;
+                    case "Q":
+                        // 2차 베지어를 3차 베지어로 변환
+                        const qx1 = isRelative ? currentX + cmd.params[0] : cmd.params[0];
+                        const qy1 = isRelative ? currentY + cmd.params[1] : cmd.params[1];
+                        const qx2 = isRelative ? currentX + cmd.params[2] : cmd.params[2];
+                        const qy2 = isRelative ? currentY + cmd.params[3] : cmd.params[3];
+
+                        // 2차 베지어를 3차 베지어로 변환하는 공식
+                        const qcp1x = currentX + (2 / 3) * (qx1 - currentX);
+                        const qcp1y = currentY + (2 / 3) * (qy1 - currentY);
+                        const qcp2x = qx2 + (2 / 3) * (qx1 - qx2);
+                        const qcp2y = qy2 + (2 / 3) * (qy1 - qy2);
+
+                        result += `C ${qcp1x.toFixed(3)} ${qcp1y.toFixed(3)} ${qcp2x.toFixed(3)} ${qcp2y.toFixed(3)} ${qx2.toFixed(3)} ${qy2.toFixed(3)} `;
+                        currentX = qx2;
+                        currentY = qy2;
+                        break;
+                    case "A":
+                        // 호(Arc)를 베지어 곡선으로 근사 (단순화된 버전)
+                        const ax = isRelative ? currentX + cmd.params[5] : cmd.params[5];
+                        const ay = isRelative ? currentY + cmd.params[6] : cmd.params[6];
+
+                        // 간단한 근사: 호를 직선에 가까운 곡선으로 변환
+                        const acp1x = currentX + (ax - currentX) * 0.33;
+                        const acp1y = currentY + (ay - currentY) * 0.33;
+                        const acp2x = currentX + (ax - currentX) * 0.67;
+                        const acp2y = currentY + (ay - currentY) * 0.67;
+
+                        result += `C ${acp1x.toFixed(3)} ${acp1y.toFixed(3)} ${acp2x.toFixed(3)} ${acp2y.toFixed(3)} ${ax.toFixed(3)} ${ay.toFixed(3)} `;
+                        currentX = ax;
+                        currentY = ay;
+                        break;
+                    case "Z":
+                        result += "Z ";
+                        break;
+                }
+            }
+        });
+
+        return result.trim();
+    } catch (error) {
+        console.error("Error converting path to cubic curves:", error);
+        return path;
+    }
+}
+
 // 모든 Path의 포인트 수를 최대값으로 맞추는 함수 (곡선 보존 방식)
 function normalizeAllPaths(paths: string[]): string[] {
     const pointCounts = paths.map((path) => getAnchorPoints(path).length);
@@ -1952,6 +2126,177 @@ function parsePathCommands(path: string) {
     return commands;
 }
 
+// SVG 패스의 경계 박스를 계산하는 함수
+function getPathBounds(path: string): { x: number; y: number; width: number; height: number } {
+    try {
+        const commands = parsePathCommands(path);
+        let minX = Infinity,
+            minY = Infinity,
+            maxX = -Infinity,
+            maxY = -Infinity;
+        let currentX = 0,
+            currentY = 0;
+
+        commands.forEach((cmd) => {
+            const params = cmd.params;
+            const isRelative = cmd.command === cmd.command.toLowerCase();
+
+            switch (cmd.command.toUpperCase()) {
+                case "M":
+                case "L":
+                    if (params.length >= 2) {
+                        const x = isRelative ? currentX + params[0] : params[0];
+                        const y = isRelative ? currentY + params[1] : params[1];
+                        currentX = x;
+                        currentY = y;
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    }
+                    break;
+                case "C":
+                    if (params.length >= 6) {
+                        for (let i = 0; i < 6; i += 2) {
+                            const x = isRelative ? currentX + params[i] : params[i];
+                            const y = isRelative ? currentY + params[i + 1] : params[i + 1];
+                            if (i === 4) {
+                                currentX = x;
+                                currentY = y;
+                            }
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        }
+                    }
+                    break;
+                case "Q":
+                    if (params.length >= 4) {
+                        for (let i = 0; i < 4; i += 2) {
+                            const x = isRelative ? currentX + params[i] : params[i];
+                            const y = isRelative ? currentY + params[i + 1] : params[i + 1];
+                            if (i === 2) {
+                                currentX = x;
+                                currentY = y;
+                            }
+                            minX = Math.min(minX, x);
+                            minY = Math.min(minY, y);
+                            maxX = Math.max(maxX, x);
+                            maxY = Math.max(maxY, y);
+                        }
+                    }
+                    break;
+                case "A":
+                    if (params.length >= 7) {
+                        const x = isRelative ? currentX + params[5] : params[5];
+                        const y = isRelative ? currentY + params[6] : params[6];
+                        currentX = x;
+                        currentY = y;
+                        minX = Math.min(minX, x);
+                        minY = Math.min(minY, y);
+                        maxX = Math.max(maxX, x);
+                        maxY = Math.max(maxY, y);
+                    }
+                    break;
+            }
+        });
+
+        return {
+            x: minX === Infinity ? 0 : minX,
+            y: minY === Infinity ? 0 : minY,
+            width: maxX === -Infinity ? 0 : maxX - minX,
+            height: maxY === -Infinity ? 0 : maxY - minY,
+        };
+    } catch (error) {
+        console.error("Error calculating path bounds:", error);
+        return { x: 0, y: 0, width: 400, height: 400 };
+    }
+}
+
+// 패스를 지정된 크기로 스케일링하는 함수
+function scalePath(path: string, targetBounds: { x: number; y: number; width: number; height: number }): string {
+    try {
+        const currentBounds = getPathBounds(path);
+        if (currentBounds.width === 0 || currentBounds.height === 0) return path;
+
+        const scaleX = targetBounds.width / currentBounds.width;
+        const scaleY = targetBounds.height / currentBounds.height;
+        const scale = Math.min(scaleX, scaleY); // 비율 유지
+
+        const offsetX =
+            targetBounds.x + (targetBounds.width - currentBounds.width * scale) / 2 - currentBounds.x * scale;
+        const offsetY =
+            targetBounds.y + (targetBounds.height - currentBounds.height * scale) / 2 - currentBounds.y * scale;
+
+        const commands = parsePathCommands(path);
+        let result = "";
+
+        commands.forEach((cmd) => {
+            result += cmd.command;
+            if (cmd.params.length > 0) {
+                const scaledParams = cmd.params.map((param, i) => {
+                    if (i % 2 === 0) {
+                        // x 좌표
+                        return param * scale + (cmd.command === cmd.command.toUpperCase() ? offsetX : 0);
+                    } else {
+                        // y 좌표
+                        return param * scale + (cmd.command === cmd.command.toUpperCase() ? offsetY : 0);
+                    }
+                });
+                result += " " + scaledParams.map((p) => p.toFixed(3)).join(" ");
+            }
+        });
+
+        return result;
+    } catch (error) {
+        console.error("Error scaling path:", error);
+        return path;
+    }
+}
+
+// 모든 패스를 동일한 크기로 정규화하는 함수
+function normalizePathSizes(paths: string[]): { normalizedPaths: string[]; viewBox: string } {
+    if (paths.length === 0) return { normalizedPaths: [], viewBox: "0 0 400 400" };
+
+    // 모든 패스의 경계를 계산
+    const bounds = paths.map((path) => getPathBounds(path));
+
+    // 전체 경계 계산
+    const minX = Math.min(...bounds.map((b) => b.x));
+    const minY = Math.min(...bounds.map((b) => b.y));
+    const maxX = Math.max(...bounds.map((b) => b.x + b.width));
+    const maxY = Math.max(...bounds.map((b) => b.y + b.height));
+
+    const totalWidth = maxX - minX;
+    const totalHeight = maxY - minY;
+
+    // 패딩 추가
+    const padding = Math.max(totalWidth, totalHeight) * 0.1;
+    const viewBoxX = minX - padding;
+    const viewBoxY = minY - padding;
+    const viewBoxWidth = totalWidth + padding * 2;
+    const viewBoxHeight = totalHeight + padding * 2;
+
+    // 대상 경계 (가장 큰 경계를 기준으로)
+    const maxWidth = Math.max(...bounds.map((b) => b.width));
+    const maxHeight = Math.max(...bounds.map((b) => b.height));
+    const targetBounds = {
+        x: minX + (totalWidth - maxWidth) / 2,
+        y: minY + (totalHeight - maxHeight) / 2,
+        width: maxWidth,
+        height: maxHeight,
+    };
+
+    // 모든 패스를 동일한 크기로 스케일링
+    const normalizedPaths = paths.map((path) => scalePath(path, targetBounds));
+
+    return {
+        normalizedPaths,
+        viewBox: `${viewBoxX.toFixed(1)} ${viewBoxY.toFixed(1)} ${viewBoxWidth.toFixed(1)} ${viewBoxHeight.toFixed(1)}`,
+    };
+}
+
 // GSAP 기반 SVG path 보간 함수 (곡선 지원)
 function interpolatePaths(path1: string, path2: string, t: number): string {
     try {
@@ -2071,16 +2416,42 @@ export default function Home() {
     const [isAnimationMode, setIsAnimationMode] = useState(false);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const timelineRef = useRef<gsap.core.Timeline | null>(null);
+    const [viewBox, setViewBox] = useState("0 0 400 400");
 
     const currentPath = previewIndex != null ? paths[previewIndex] : "";
 
-    // Morphing을 위한 계산된 Path
-    const morphingPath = useMemo(() => {
+    // Morphing을 위한 계산된 Path와 ViewBox
+    const { morphingPath, morphingViewBox, normalizedFromPath, normalizedToPath } = useMemo(() => {
         if (paths.length >= 2 && morphingFromIndex < paths.length && morphingToIndex < paths.length) {
-            return interpolatePaths(paths[morphingFromIndex], paths[morphingToIndex], t);
+            const fromPath = paths[morphingFromIndex];
+            const toPath = paths[morphingToIndex];
+
+            // 1. 먼저 모든 명령어를 C(CubicBezier) 명령어로 변환 (곡선 품질 유지)
+            const cubicCurvePaths = [fromPath, toPath].map((path) => convertPathToCubicCurves(path));
+
+            // 2. 포인트 수 정규화
+            const pointNormalizedPaths = normalizeAllPaths(cubicCurvePaths);
+
+            // 3. 크기 정규화
+            const { normalizedPaths, viewBox: normalizedViewBox } = normalizePathSizes(pointNormalizedPaths);
+
+            // 4. 정규화된 패스들 간의 모핑
+            const interpolatedPath = interpolatePaths(normalizedPaths[0], normalizedPaths[1], t);
+
+            return {
+                morphingPath: interpolatedPath,
+                morphingViewBox: normalizedViewBox,
+                normalizedFromPath: normalizedPaths[0],
+                normalizedToPath: normalizedPaths[1],
+            };
         }
-        return "";
-    }, [paths, morphingFromIndex, morphingToIndex, t]);
+        return {
+            morphingPath: "",
+            morphingViewBox: viewBox,
+            normalizedFromPath: "",
+            normalizedToPath: "",
+        };
+    }, [paths, morphingFromIndex, morphingToIndex, t, viewBox]);
 
     // 히스토리에 현재 상태 저장
     const saveToHistory = useCallback(
@@ -2459,7 +2830,7 @@ export default function Home() {
             return { minX: 0, minY: 0, maxX: 400, maxY: 400 };
         }
     }
-    const [viewBox, setViewBox] = useState("0 0 400 400");
+
     useEffect(() => {
         if (currentPath) {
             const { minX, minY, maxX, maxY } = getPathBBox(currentPath);
@@ -2802,15 +3173,7 @@ export default function Home() {
                                 href="https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{
-                                    color: "#a0a0a0",
-                                    transition: "color 0.2s ease",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: "32px",
-                                    height: "32px",
-                                }}
+                                className="sns-link"
                                 onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                                 onMouseLeave={(e) => (e.currentTarget.style.color = "#a0a0a0")}
                             >
@@ -2822,15 +3185,7 @@ export default function Home() {
                                 href="https://github.com/HyeRyeongY/svgenius/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{
-                                    color: "#a0a0a0",
-                                    transition: "color 0.2s ease",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: "32px",
-                                    height: "32px",
-                                }}
+                                className="sns-link"
                                 onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                                 onMouseLeave={(e) => (e.currentTarget.style.color = "#a0a0a0")}
                             >
@@ -2842,15 +3197,7 @@ export default function Home() {
                                 href="https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                style={{
-                                    color: "#a0a0a0",
-                                    transition: "color 0.2s ease",
-                                    display: "flex",
-                                    alignItems: "center",
-                                    justifyContent: "center",
-                                    width: "32px",
-                                    height: "32px",
-                                }}
+                                className="sns-link"
                                 onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                                 onMouseLeave={(e) => (e.currentTarget.style.color = "#a0a0a0")}
                             >
@@ -2870,9 +3217,7 @@ export default function Home() {
                             </a>
                         </Tooltip> */}
                     </div>
-                    <p style={{ fontSize: "1.2rem", color: "#666", marginTop: "0.5rem" }}>
-                        © 2025 Yoonhr. All rights reserved.
-                    </p>
+                    <p className="footer-copyright">© 2025 Yoonhr. All rights reserved.</p>
                 </div>
             </header>
 
@@ -2885,13 +3230,13 @@ export default function Home() {
                                 <span className="chip">{paths.length} Paths</span>
                             </div>
                             <Tooltip
-                                content={(() => {
+                                content={() => {
                                     const validPaths = paths.filter((path) => path.trim().length > 0);
                                     if (validPaths.length < 2) {
                                         return "At least 2 paths with content are required";
                                     }
                                     return "Normalize all paths to maximum point count";
-                                })()}
+                                }}
                                 position="bottom"
                             >
                                 <RippleButton
@@ -2948,7 +3293,7 @@ export default function Home() {
                                             );
                                         })()}
                                     </label>
-                                    <div className="button-wrap" style={{ justifyContent: "flex-end" }}>
+                                    <div className="button-wrap button-wrap--end">
                                         {paths.length > 1 && (
                                             <Tooltip content="Delete Path" position="bottom">
                                                 <RippleButton
@@ -2967,8 +3312,7 @@ export default function Home() {
                                                 onClick={() => {
                                                     setPreviewIndex((prev) => (prev === index ? null : index));
                                                 }}
-                                                className={`btn preview-btn ${previewIndex === index ? "active" : "text"}`}
-                                                style={{ padding: "4px 0" }}
+                                                className={`btn preview-btn preview-btn--compact ${previewIndex === index ? "active" : "text"}`}
                                             >
                                                 <span>Preview</span>
                                                 {previewIndex === index ? (
@@ -3002,16 +3346,8 @@ export default function Home() {
                                                                 toast.error("Failed to copy");
                                                             });
                                                     }}
-                                                    className="btn icon"
+                                                    className="btn icon copy-btn--small"
                                                     disabled={!path.trim()}
-                                                    style={{
-                                                        width: "2.8rem",
-                                                        height: "2.8rem",
-                                                        padding: "0",
-                                                        display: "flex",
-                                                        alignItems: "center",
-                                                        justifyContent: "center",
-                                                    }}
                                                 >
                                                     <Copy className="icon" size={14} />
                                                 </RippleButton>
@@ -3143,7 +3479,7 @@ export default function Home() {
                                                         viewBox={viewBox}
                                                         width="100%"
                                                         height="100%"
-                                                        style={{ userSelect: "none" }}
+                                                        className="svg-preview"
                                                     >
                                                         <>
                                                             <path
@@ -3188,7 +3524,7 @@ export default function Home() {
                                                                                   : "#ddd"
                                                                         }
                                                                         fontWeight="bold"
-                                                                        style={{ pointerEvents: "none" }}
+                                                                        className="point-label"
                                                                     >
                                                                         {i}
                                                                     </text>
@@ -3205,7 +3541,7 @@ export default function Home() {
                                                     viewBox={viewBox}
                                                     width="100%"
                                                     height="100%"
-                                                    style={{ userSelect: "none" }}
+                                                    className="svg-preview"
                                                 >
                                                     <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="9">
                                                         Please add a path
@@ -3276,7 +3612,8 @@ export default function Home() {
                                                 </Tooltip>
                                             </div>
                                         </div>
-                                        <div className="wrap" style={{ margin: "1rem 0" }}>
+
+                                        <div className="wrap animation-wrap">
                                             <label className="label">Animation Progress</label>
                                             <input
                                                 type="range"
@@ -3286,11 +3623,9 @@ export default function Home() {
                                                 value={t}
                                                 onChange={(e) => setT(parseFloat(e.target.value))}
                                             />
-                                            <span className="chip" style={{ width: "50px", justifyContent: "center" }}>
-                                                {Math.round(t * 100)}%
-                                            </span>
+                                            <span className="chip chip--centered">{Math.round(t * 100)}%</span>
                                         </div>
-                                        <div className="wrap" style={{ margin: "1rem 0 2rem" }}>
+                                        <div className="wrap animation-wrap--bottom">
                                             <label className="label">Animation Speed</label>
                                             <input
                                                 type="range"
@@ -3300,9 +3635,7 @@ export default function Home() {
                                                 value={animationSpeed}
                                                 onChange={(e) => setAnimationSpeed(parseFloat(e.target.value))}
                                             />
-                                            <span className="chip" style={{ width: "50px", justifyContent: "center" }}>
-                                                {animationSpeed.toFixed(1)}x
-                                            </span>
+                                            <span className="chip chip--centered">{animationSpeed.toFixed(1)}x</span>
                                         </div>
                                     </div>
                                 )}
@@ -3313,7 +3646,7 @@ export default function Home() {
                                         <div className="preview">
                                             <svg
                                                 ref={svgRef}
-                                                viewBox={viewBox}
+                                                viewBox={morphingViewBox}
                                                 width="100%"
                                                 height="100%"
                                                 style={{ userSelect: "none" }}
@@ -3325,6 +3658,68 @@ export default function Home() {
                                                     strokeWidth="1"
                                                 />
                                             </svg>
+                                        </div>
+                                        <div className="animation-export-controls">
+                                            <label className="label">Export Normalized Paths</label>
+                                            <Tooltip content="Export normalized start path" position="bottom">
+                                                <RippleButton
+                                                    onClick={() =>
+                                                        exportSingleNormalizedPath(
+                                                            normalizedFromPath,
+                                                            morphingViewBox,
+                                                            morphingFromIndex,
+                                                            "from"
+                                                        )
+                                                    }
+                                                    className="btn secondary"
+                                                    disabled={!normalizedFromPath}
+                                                >
+                                                    <Download size={14} />
+                                                    Start Path
+                                                </RippleButton>
+                                            </Tooltip>
+                                            <Tooltip content="Export normalized end path" position="bottom">
+                                                <RippleButton
+                                                    onClick={() =>
+                                                        exportSingleNormalizedPath(
+                                                            normalizedToPath,
+                                                            morphingViewBox,
+                                                            morphingToIndex,
+                                                            "to"
+                                                        )
+                                                    }
+                                                    className="btn secondary "
+                                                    disabled={!normalizedToPath}
+                                                >
+                                                    <Download size={14} />
+                                                    End Path
+                                                </RippleButton>
+                                            </Tooltip>
+                                            <Tooltip content="Export both normalized paths" position="bottom">
+                                                <RippleButton
+                                                    onClick={() =>
+                                                        exportAllNormalizedPaths(
+                                                            normalizedFromPath,
+                                                            normalizedToPath,
+                                                            morphingViewBox,
+                                                            morphingFromIndex,
+                                                            morphingToIndex
+                                                        )
+                                                    }
+                                                    className="btn secondary"
+                                                    disabled={!normalizedFromPath || !normalizedToPath}
+                                                >
+                                                    <Download size={14} />
+                                                    Both Paths
+                                                </RippleButton>
+                                            </Tooltip>
+                                            <div className="wrap animation-info-box">
+                                                <div className="animation-info-text">
+                                                    💡 Tip: Animation automatically normalizes paths for smooth
+                                                    morphing. Export individual or both normalized paths to get the
+                                                    optimized versions that produce the same morphing effect.
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 ) : (
