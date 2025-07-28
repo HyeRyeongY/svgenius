@@ -17,9 +17,13 @@ import {
     CircleDot,
     Github,
     BookAlert,
+    FileText,
 } from "lucide-react";
 import Tooltip from "../components/Tooltip";
 import RippleButton from "../components/RippleButton";
+import Tutorial from "../components/Tutorial";
+import LanguageToggle from "../components/LanguageToggle";
+import { LanguageProvider, useLanguage } from "../contexts/LanguageContext";
 import { gsap } from "gsap";
 
 import Image from "next/image";
@@ -167,22 +171,6 @@ function getAnchorPoints(path: string): AnchorPoint[] {
 }
 
 /* export */
-function exportPathAsSVG(path: string, index: number) {
-    // 브라우저 환경에서만 실행되도록 체크
-    if (typeof window === "undefined") {
-        return;
-    }
-
-    const svg = `<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><path d="${path}" fill="black"/></svg>`;
-    const blob = new Blob([svg], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `svgenius-path-${index}.svg`;
-    a.click();
-    URL.revokeObjectURL(url);
-    toast.success(`Exported Path #${index + 1}`);
-}
 
 // 개별 정규화된 패스를 내보내는 함수
 function exportSingleNormalizedPath(path: string, morphingViewBox: string, pathIndex: number, pathType: "from" | "to") {
@@ -192,7 +180,7 @@ function exportSingleNormalizedPath(path: string, morphingViewBox: string, pathI
     }
 
     if (!path) {
-        toast.error("No normalized path available");
+        toast.error(t("toast.noNormalizedPath"));
         return;
     }
 
@@ -208,7 +196,7 @@ function exportSingleNormalizedPath(path: string, morphingViewBox: string, pathI
 
     URL.revokeObjectURL(url);
 
-    toast.success(`Normalized ${pathType} path exported successfully`);
+    toast.success(t("toast.normalizedPathExported"));
 }
 
 // 정규화된 패스들을 모두 내보내는 함수
@@ -225,7 +213,7 @@ function exportAllNormalizedPaths(
     }
 
     if (!normalizedFromPath || !normalizedToPath) {
-        toast.error("No normalized paths available");
+        toast.error(t("toast.noNormalizedPaths"));
         return;
     }
 
@@ -245,7 +233,7 @@ function exportAllNormalizedPaths(
         URL.revokeObjectURL(url);
     });
 
-    toast.success("All normalized paths exported successfully");
+    toast.success(t("toast.allNormalizedExported"));
 }
 
 function extractPathsFromSVG(svgContent: string): string[] {
@@ -2396,7 +2384,14 @@ function interpolatePaths(path1: string, path2: string, t: number): string {
     }
 }
 
-export default function Home() {
+// 튜토리얼 데모용 패스들 (애니메이션 효과가 잘 보이는 패스들)
+const tutorialDemoPaths = [
+    "M200 100 C250 100 300 150 300 200 C300 250 250 300 200 300 C150 300 100 250 100 200 C100 150 150 100 200 100 Z", // 원형 (곡선)
+    "M200 120 L260 160 L240 240 L160 240 L140 160 Z", // 오각형 (중앙 정렬)
+];
+
+function HomeContent() {
+    const { t } = useLanguage();
     const [paths, setPaths] = useState<string[]>([
         "M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z",
     ]);
@@ -2407,7 +2402,7 @@ export default function Home() {
     ]);
     const [historyIndex, setHistoryIndex] = useState(0);
     const [isNormalized, setIsNormalized] = useState(false); // Track normalization state
-    const [t, setT] = useState(0);
+    const [animationProgress, setAnimationProgress] = useState(0);
     const [isAnimating, setIsAnimating] = useState(false);
     const [animationSpeed, setAnimationSpeed] = useState(2);
     const [previewIndex, setPreviewIndex] = useState<number | null>(0);
@@ -2417,14 +2412,85 @@ export default function Home() {
     const fileInputRef = useRef<HTMLInputElement>(null);
     const timelineRef = useRef<gsap.core.Timeline | null>(null);
     const [viewBox, setViewBox] = useState("0 0 400 400");
+    const [showTutorial, setShowTutorial] = useState(false);
 
-    const currentPath = previewIndex != null ? paths[previewIndex] : "";
+    // 튜토리얼 전용 상태들
+    const [tutorialPaths, setTutorialPaths] = useState<string[]>([]);
+    const [isTutorialMode, setIsTutorialMode] = useState(false);
+
+    // 현재 사용할 패스들 (튜토리얼 모드면 튜토리얼 패스, 아니면 실제 패스)
+    const activePaths = isTutorialMode ? tutorialPaths : paths;
+
+    const currentPath = previewIndex != null ? activePaths[previewIndex] : "";
+
+    // Tutorial steps
+    const tutorialSteps = [
+        {
+            target: ".path-editor",
+            title: t("tutorial.addPaths.title"),
+            content: t("tutorial.addPaths.content"),
+            position: "right" as const,
+        },
+        {
+            target: ".preview-section",
+            title: t("tutorial.pointEditing.title"),
+            content: t("tutorial.pointEditing.content"),
+            position: "left" as const,
+        },
+        {
+            target: ".toggle-btn",
+            title: t("tutorial.switchMode.title"),
+            content: t("tutorial.switchMode.content"),
+            position: "bottom" as const,
+            action: () => setIsAnimationMode(true),
+        },
+        {
+            target: ".preview-section",
+            title: t("tutorial.testAnimation.title"),
+            content: t("tutorial.testAnimation.content"),
+            position: "left" as const,
+        },
+        {
+            target: ".preview-section",
+            title: t("tutorial.exportPaths.title"),
+            content: t("tutorial.exportPaths.content"),
+            position: "left" as const,
+        },
+    ];
+
+    // Tutorial localStorage logic
+    useEffect(() => {
+        const today = new Date().toDateString();
+        const lastShown = localStorage.getItem("svgenius-tutorial-last-shown");
+        const hasShownToday = lastShown === today;
+
+        if (!hasShownToday && paths.length === 1 && paths[0] === "") {
+            // Show tutorial only on first visit of the day with empty paths
+            setShowTutorial(true);
+        }
+    }, []);
+
+    const handleCloseTutorial = () => {
+        setShowTutorial(false);
+        // 튜토리얼 종료 후 Point Editing 모드로 돌아가기
+        setIsAnimationMode(false);
+    };
 
     // Morphing을 위한 계산된 Path와 ViewBox
     const { morphingPath, morphingViewBox, normalizedFromPath, normalizedToPath } = useMemo(() => {
-        if (paths.length >= 2 && morphingFromIndex < paths.length && morphingToIndex < paths.length) {
-            const fromPath = paths[morphingFromIndex];
-            const toPath = paths[morphingToIndex];
+        if (activePaths.length >= 2 && morphingFromIndex < activePaths.length && morphingToIndex < activePaths.length) {
+            const fromPath = activePaths[morphingFromIndex];
+            const toPath = activePaths[morphingToIndex];
+
+            // 패스가 비어있는지 확인
+            if (!fromPath?.trim() || !toPath?.trim()) {
+                return {
+                    morphingPath: "",
+                    morphingViewBox: viewBox,
+                    normalizedFromPath: "",
+                    normalizedToPath: "",
+                };
+            }
 
             // 1. 먼저 모든 명령어를 C(CubicBezier) 명령어로 변환 (곡선 품질 유지)
             const cubicCurvePaths = [fromPath, toPath].map((path) => convertPathToCubicCurves(path));
@@ -2436,7 +2502,7 @@ export default function Home() {
             const { normalizedPaths, viewBox: normalizedViewBox } = normalizePathSizes(pointNormalizedPaths);
 
             // 4. 정규화된 패스들 간의 모핑
-            const interpolatedPath = interpolatePaths(normalizedPaths[0], normalizedPaths[1], t);
+            const interpolatedPath = interpolatePaths(normalizedPaths[0], normalizedPaths[1], animationProgress);
 
             return {
                 morphingPath: interpolatedPath,
@@ -2451,7 +2517,7 @@ export default function Home() {
             normalizedFromPath: "",
             normalizedToPath: "",
         };
-    }, [paths, morphingFromIndex, morphingToIndex, t, viewBox]);
+    }, [activePaths, morphingFromIndex, morphingToIndex, animationProgress, viewBox]);
 
     // 히스토리에 현재 상태 저장
     const saveToHistory = useCallback(
@@ -2525,8 +2591,63 @@ export default function Home() {
         setPaths(newPaths);
         saveToHistory(newPaths);
         setIsNormalized(false); // Reset normalization state when adding new path
-        toast.success("New path added");
+        toast.success(t("toast.newPathAdded"));
     };
+
+    const exportPathAsSVG = (path: string, index: number) => {
+        // 브라우저 환경에서만 실행되도록 체크
+        if (typeof window === "undefined") {
+            return;
+        }
+
+        const svg = `<svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"><path d="${path}" fill="black"/></svg>`;
+        const blob = new Blob([svg], { type: "image/svg+xml" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = `svgenius-path-${index}.svg`;
+        a.click();
+        URL.revokeObjectURL(url);
+        toast.success(t("toast.pathExported"));
+    };
+
+    // Setup tutorial demo paths when tutorial becomes visible
+    useEffect(() => {
+        if (showTutorial) {
+            setIsTutorialMode(true);
+            setTutorialPaths(tutorialDemoPaths);
+            setPreviewIndex(0);
+            setMorphingFromIndex(0);
+            setMorphingToIndex(1);
+        } else {
+            setIsTutorialMode(false);
+            setTutorialPaths([]);
+        }
+    }, [showTutorial]);
+
+    // Validate and adjust morphing indices when active paths change
+    useEffect(() => {
+        if (activePaths.length >= 2) {
+            const validIndices = activePaths
+                .map((path, index) => ({ path: path.trim(), index }))
+                .filter((item) => item.path.length > 0)
+                .map((item) => item.index);
+
+            if (validIndices.length >= 2) {
+                // Ensure indices point to valid (non-empty) paths
+                if (!activePaths[morphingFromIndex]?.trim()) {
+                    setMorphingFromIndex(validIndices[0]);
+                }
+                if (!activePaths[morphingToIndex]?.trim()) {
+                    setMorphingToIndex(validIndices[1] || validIndices[0]);
+                }
+                // Ensure from and to indices are different
+                if (morphingFromIndex === morphingToIndex && validIndices.length >= 2) {
+                    setMorphingToIndex(validIndices.find((idx) => idx !== morphingFromIndex) || validIndices[1]);
+                }
+            }
+        }
+    }, [activePaths, morphingFromIndex, morphingToIndex]);
 
     const removePath = (index: number) => {
         if (paths.length > 1) {
@@ -2534,7 +2655,7 @@ export default function Home() {
             setPaths(newPaths);
             saveToHistory(newPaths);
             setIsNormalized(false); // Reset normalization state when deleting path
-            toast.success(`Path #${index} deleted`);
+            toast.success(t("toast.pathDeleted"));
         }
     };
 
@@ -2543,22 +2664,20 @@ export default function Home() {
             timelineRef.current.kill();
         }
 
+        const animProgress = { value: 0 };
+
         timelineRef.current = gsap.timeline({
             repeat: -1,
-            ease: "power2.inOut",
-            onUpdate: () => {
-                const progress = timelineRef.current?.progress() || 0;
-                setT(progress);
-            },
         });
 
-        timelineRef.current.to(
-            { value: 1 },
-            {
-                duration: 2 / animationSpeed,
-                ease: "power2.inOut",
-            }
-        );
+        timelineRef.current.to(animProgress, {
+            value: 1,
+            duration: 2 / animationSpeed,
+            ease: "power2.inOut",
+            onUpdate: () => {
+                setAnimationProgress(animProgress.value);
+            },
+        });
     }, [animationSpeed]);
 
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -2576,12 +2695,12 @@ export default function Home() {
                     setIsNormalized(false); // Reset normalization state on file upload
                     toast.success(`Added ${extractedPaths.length} paths from SVG file`);
                 } else {
-                    toast.error("No paths found in SVG file");
+                    toast.error(t("toast.noPathsInSvg"));
                 }
             };
             reader.readAsText(file);
         } else {
-            toast.error("Please select a valid SVG file.");
+            toast.error(t("toast.selectValidSvg"));
         }
     };
 
@@ -2603,7 +2722,7 @@ export default function Home() {
     };
 
     const resetAnimation = () => {
-        setT(0);
+        setAnimationProgress(0);
         setIsAnimating(false);
         if (timelineRef.current) {
             timelineRef.current.pause();
@@ -3163,11 +3282,22 @@ export default function Home() {
                     <Image src="/SVGenius.svg" alt="SVGenius Logo" width={32} height={32} />
                     <div>
                         <h1 className="title">SVGenius</h1>
-                        <p className="subtitle">Perfect SVG morphing starts here.</p>
+                        <p className="subtitle">{t("header.subtitle")}</p>
                     </div>
                 </div>
                 <div>
                     <div className="sns">
+                        <LanguageToggle />
+                        <Tooltip content={t("header.tutorial")} position="bottom">
+                            <button
+                                onClick={() => setShowTutorial(true)}
+                                className="sns-link tutorial"
+                                onMouseEnter={(e) => (e.currentTarget.style.color = "#ffbb00")}
+                                onMouseLeave={(e) => (e.currentTarget.style.color = "#ffbb00ab")}
+                            >
+                                <BookAlert size={20} />
+                            </button>
+                        </Tooltip>
                         <Tooltip content="도움말" position="bottom">
                             <a
                                 href="https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727"
@@ -3177,7 +3307,7 @@ export default function Home() {
                                 onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
                                 onMouseLeave={(e) => (e.currentTarget.style.color = "#a0a0a0")}
                             >
-                                <BookAlert size={20} />
+                                <FileText size={20} />
                             </a>
                         </Tooltip>
                         <Tooltip content="GitHub" position="bottom">
@@ -3192,30 +3322,6 @@ export default function Home() {
                                 <Github size={20} />
                             </a>
                         </Tooltip>
-                        {/* <Tooltip content="Notion" position="bottom">
-                            <a
-                                href="https://www.notion.so/SVGenius-239a784e4dc28063b248d4db639a4727"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="sns-link"
-                                onMouseEnter={(e) => (e.currentTarget.style.color = "#fff")}
-                                onMouseLeave={(e) => (e.currentTarget.style.color = "#a0a0a0")}
-                            >
-                                <svg
-                                    role="img"
-                                    width={20}
-                                    height={20}
-                                    viewBox="0 0 24 24"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                >
-                                    <title>Notion</title>
-                                    <path
-                                        fill="currentColor"
-                                        d="M4.459 4.208c.746.606 1.026.56 2.428.466l13.215-.793c.28 0 .047-.28-.046-.326L17.86 1.968c-.42-.326-.981-.7-2.055-.607L3.01 2.295c-.466.046-.56.28-.374.466zm.793 3.08v13.904c0 .747.373 1.027 1.214.98l14.523-.84c.841-.046.935-.56.935-1.167V6.354c0-.606-.233-.933-.748-.887l-15.177.887c-.56.047-.747.327-.747.933zm14.337.745c.093.42 0 .84-.42.888l-.7.14v10.264c-.608.327-1.168.514-1.635.514-.748 0-.935-.234-1.495-.933l-4.577-7.186v6.952L12.21 19s0 .84-1.168.84l-3.222.186c-.093-.186 0-.653.327-.746l.84-.233V9.854L7.822 9.76c-.094-.42.14-1.026.793-1.073l3.456-.233 4.764 7.279v-6.44l-1.215-.139c-.093-.514.28-.887.747-.933zM1.936 1.035l13.31-.98c1.634-.14 2.055-.047 3.082.7l4.249 2.986c.7.513.934.653.934 1.213v16.378c0 1.026-.373 1.634-1.68 1.726l-15.458.934c-.98.047-1.448-.093-1.962-.747l-3.129-4.06c-.56-.747-.793-1.306-.793-1.96V2.667c0-.839.374-1.54 1.447-1.632z"
-                                    />
-                                </svg>
-                            </a>
-                        </Tooltip> */}
                     </div>
                     <p className="footer-copyright">© 2025 Yoonhr. All rights reserved.</p>
                 </div>
@@ -3226,44 +3332,18 @@ export default function Home() {
                     <div className="section path-editor">
                         <div className="section-header">
                             <div className="section-title-wrap">
-                                <h2 className="section-title">Path Editor</h2>
-                                <span className="chip">{paths.length} Paths</span>
+                                <h2 className="section-title">{t("pathEditor.title")}</h2>
+                                <span className="chip">
+                                    {isTutorialMode ? activePaths.length : paths.length} {t("pathEditor.paths")}
+                                </span>
                             </div>
-                            <Tooltip
-                                content={() => {
-                                    const validPaths = paths.filter((path) => path.trim().length > 0);
-                                    if (validPaths.length < 2) {
-                                        return "At least 2 paths with content are required";
-                                    }
-                                    return "Normalize all paths to maximum point count";
-                                }}
-                                position="bottom"
-                            >
-                                <RippleButton
-                                    onClick={() => {
-                                        const normalized = normalizeAllPaths(paths);
-                                        setPaths(normalized);
-                                        saveToHistory(normalized);
-                                        setIsNormalized(true); // Set normalization completed state
-                                        toast.success("All paths normalized to equal point counts");
-                                    }}
-                                    className="btn small primary"
-                                    disabled={(() => {
-                                        // Filter valid paths (non-empty strings)
-                                        const validPaths = paths.filter((path) => path.trim().length > 0);
-                                        return validPaths.length < 2;
-                                    })()}
-                                >
-                                    Normalize Points
-                                </RippleButton>
-                            </Tooltip>
                         </div>
 
-                        {paths.map((path, index) => (
+                        {(isTutorialMode ? tutorialPaths : paths).map((path, index) => (
                             <div key={index} className="path-group">
                                 <div className="path-header">
                                     <label className="label">
-                                        Path {index + 1}
+                                        {t("pathEditor.path")} {index + 1}
                                         {(() => {
                                             // Conditions to check normalization state
                                             const hasValidPath = path.trim().length > 0;
@@ -3288,24 +3368,29 @@ export default function Home() {
 
                                             return (
                                                 <span className={`chip ${shouldShowNormalized ? "normalized" : ""}`}>
-                                                    {currentPoints} Points{shouldShowNormalized ? " - 정규화됨" : ""}
+                                                    {currentPoints} {t("pathEditor.points")}
+                                                    {shouldShowNormalized ? ` - ${t("pathEditor.normalized")}` : ""}
                                                 </span>
                                             );
                                         })()}
                                     </label>
                                     <div className="button-wrap button-wrap--end">
-                                        {paths.length > 1 && (
-                                            <Tooltip content="Delete Path" position="bottom">
+                                        {paths.length > 1 && !isTutorialMode && (
+                                            <Tooltip content={t("tooltip.deletePath")} position="bottom">
                                                 <RippleButton
                                                     onClick={() => removePath(index)}
                                                     className="btn danger small"
                                                 >
-                                                    <span>Delete</span>
+                                                    <span>{t("common.delete")}</span>
                                                 </RippleButton>
                                             </Tooltip>
                                         )}
                                         <Tooltip
-                                            content={previewIndex === index ? "Hide Preview" : "Show Preview"}
+                                            content={
+                                                previewIndex === index
+                                                    ? t("pathEditor.hidePreview")
+                                                    : t("pathEditor.preview")
+                                            }
                                             position="bottom"
                                         >
                                             <RippleButton
@@ -3314,7 +3399,7 @@ export default function Home() {
                                                 }}
                                                 className={`btn preview-btn preview-btn--compact ${previewIndex === index ? "active" : "text"}`}
                                             >
-                                                <span>Preview</span>
+                                                <span>{t("pathEditor.preview")}</span>
                                                 {previewIndex === index ? (
                                                     <CircleDot className="icon" size={14} />
                                                 ) : (
@@ -3328,51 +3413,71 @@ export default function Home() {
                                     <div className="textarea-container">
                                         <textarea
                                             value={path}
-                                            onChange={(e) => updatePath(index, e.target.value)}
+                                            onChange={(e) => !isTutorialMode && updatePath(index, e.target.value)}
                                             className="textarea"
-                                            placeholder={`Enter SVG path ${index + 1}`}
+                                            placeholder={`${t("pathEditor.placeholder")} ${index + 1}`}
                                             spellCheck={false}
+                                            readOnly={isTutorialMode}
+                                            style={
+                                                isTutorialMode
+                                                    ? {
+                                                          background: "#333",
+                                                          color: "#999",
+                                                          cursor: "not-allowed",
+                                                      }
+                                                    : {}
+                                            }
                                         />
                                         <div className="copy-btn">
-                                            <Tooltip content="Copy Path" position="bottom">
+                                            <Tooltip content={t("pathEditor.copy")} position="bottom">
                                                 <RippleButton
                                                     onClick={() => {
-                                                        navigator.clipboard
-                                                            .writeText(path)
-                                                            .then(() => {
-                                                                toast.success("Path copied to clipboard");
-                                                            })
-                                                            .catch(() => {
-                                                                toast.error("Failed to copy");
-                                                            });
+                                                        if (!isTutorialMode) {
+                                                            navigator.clipboard
+                                                                .writeText(path)
+                                                                .then(() => {
+                                                                    toast.success(t("toast.pathCopied"));
+                                                                })
+                                                                .catch(() => {
+                                                                    toast.error(t("toast.copyFailed"));
+                                                                });
+                                                        }
                                                     }}
                                                     className="btn icon copy-btn--small"
-                                                    disabled={!path.trim()}
+                                                    disabled={!path.trim() || isTutorialMode}
                                                 >
                                                     <Copy className="icon" size={14} />
                                                 </RippleButton>
                                             </Tooltip>
                                         </div>
                                     </div>
-                                    <Tooltip content="Export as SVG file" position="bottom">
+                                    <Tooltip content={t("tooltip.exportAsSvg")} position="bottom">
                                         <RippleButton
-                                            onClick={() => exportPathAsSVG(paths[index], index)}
+                                            onClick={() => !isTutorialMode && exportPathAsSVG(paths[index], index)}
                                             className="btn secondary export-btn"
-                                            disabled={!path.trim()}
+                                            disabled={!path.trim() || isTutorialMode}
                                         >
                                             <Download className="icon" size={14} />
-                                            Export
+                                            {t("pathEditor.export")}
                                         </RippleButton>
                                     </Tooltip>
                                 </div>
                             </div>
                         ))}
-                        <RippleButton onClick={addNewPath} className="btn text">
-                            <Plus className="icon" size={14} /> Add New Path
+                        <RippleButton
+                            onClick={() => !isTutorialMode && addNewPath()}
+                            className="btn text"
+                            disabled={isTutorialMode}
+                        >
+                            <Plus className="icon" size={14} /> {t("pathEditor.addPath")}
                         </RippleButton>
                         <input type="file" ref={fileInputRef} onChange={handleFileUpload} accept=".svg" hidden />
-                        <RippleButton onClick={() => fileInputRef.current?.click()} className="btn text">
-                            <Upload className="icon" size={14} /> Import SVG File
+                        <RippleButton
+                            onClick={() => !isTutorialMode && fileInputRef.current?.click()}
+                            className="btn text"
+                            disabled={isTutorialMode}
+                        >
+                            <Upload className="icon" size={14} /> {t("pathEditor.import")}
                         </RippleButton>
                     </div>
                 </section>
@@ -3382,20 +3487,20 @@ export default function Home() {
                         <div className="section-header">
                             {/* <h2 className="section-title">미리보기</h2> */}
                             <div className="toggle-btn">
-                                <Tooltip content="Switch to Point Editing Mode" position="bottom">
+                                <Tooltip content={t("tooltip.switchToPointEditing")} position="bottom">
                                     <RippleButton
                                         className={`btn toggle ${!isAnimationMode ? "primary" : "text"}`}
                                         onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     >
-                                        Point Editing
+                                        {t("mode.pointEditing")}
                                     </RippleButton>
                                 </Tooltip>
-                                <Tooltip content="Switch to Animation Mode" position="bottom">
+                                <Tooltip content={t("tooltip.switchToAnimation")} position="bottom">
                                     <RippleButton
                                         className={`btn toggle ${!isAnimationMode ? "text" : "primary"}`}
                                         onClick={() => setIsAnimationMode(!isAnimationMode)}
                                     >
-                                        Animation Test
+                                        {t("mode.animationTest")}
                                     </RippleButton>
                                 </Tooltip>
                             </div>
@@ -3408,12 +3513,18 @@ export default function Home() {
                                     {previewIndex !== null ? (
                                         <>
                                             <div className="path-info">
-                                                <div className="path-info-title">Path {previewIndex + 1}</div>
-                                                <span className="chip">{anchorPoints.length} Points</span>
-                                                <span className="chip">{currentPath.length} Characters</span>
+                                                <div className="path-info-title">
+                                                    {t("pathEditor.path")} {previewIndex + 1}
+                                                </div>
+                                                <span className="chip">
+                                                    {anchorPoints.length} {t("pathEditor.points")}
+                                                </span>
+                                                <span className="chip">
+                                                    {currentPath.length} {t("pathEditor.characters")}
+                                                </span>
                                             </div>
                                             <div className="button-wrap">
-                                                <Tooltip content="Undo (Ctrl+Z)" position="bottom">
+                                                <Tooltip content={t("tooltip.undo")} position="bottom">
                                                     <RippleButton
                                                         onClick={undo}
                                                         disabled={historyIndex <= 0}
@@ -3422,7 +3533,7 @@ export default function Home() {
                                                         <Undo2 className="icon" size={14} />
                                                     </RippleButton>
                                                 </Tooltip>
-                                                <Tooltip content="Redo (Ctrl+Shift+Z)" position="bottom">
+                                                <Tooltip content={t("tooltip.redo")} position="bottom">
                                                     <RippleButton
                                                         onClick={redo}
                                                         disabled={historyIndex >= pathHistory.length - 1}
@@ -3431,19 +3542,19 @@ export default function Home() {
                                                         <Redo2 className="icon" size={14} />
                                                     </RippleButton>
                                                 </Tooltip>
-                                                <Tooltip content="Set selected point as start point" position="bottom">
+                                                <Tooltip content={t("tooltip.setStartPoint")} position="bottom">
                                                     <RippleButton
                                                         className="btn primary"
                                                         onClick={handleSetStartPoint}
                                                         disabled={selectedIndex === null}
                                                     >
-                                                        Set Start Point
+                                                        {t("preview.setStartPoint")}
                                                     </RippleButton>
                                                 </Tooltip>
                                             </div>
                                         </>
                                     ) : (
-                                        <div className="no-data">Please turn on preview</div>
+                                        <div className="no-data">{t("preview.pleaseTurnOnPreview")}</div>
                                     )}
                                 </div>
                                 {previewIndex !== null ? (
@@ -3452,7 +3563,7 @@ export default function Home() {
                                             <>
                                                 {/* Point List */}
                                                 <div className="point-list">
-                                                    <h3 className="point-list-title">Points</h3>
+                                                    <h3 className="point-list-title">{t("preview.points")}</h3>
                                                     <div className="point-items">
                                                         {anchorPoints.map((pt, i) => (
                                                             <RippleButton
@@ -3461,7 +3572,7 @@ export default function Home() {
                                                                     i === currentStartIndex ? "start" : ""
                                                                 }`}
                                                                 onClick={() => setSelectedIndex(i)}
-                                                                title={`Point ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
+                                                                title={`${t("preview.point")} ${i} (${pt.x.toFixed(1)}, ${pt.y.toFixed(1)})`}
                                                             >
                                                                 <span className="point-number">{i}</span>
                                                                 <span className="point-coords">
@@ -3544,7 +3655,7 @@ export default function Home() {
                                                     className="svg-preview"
                                                 >
                                                     <text x="200" y="200" textAnchor="middle" fill="#999" fontSize="9">
-                                                        Please add a path
+                                                        {t("preview.pleaseAddPath")}
                                                     </text>
                                                 </svg>
                                             </div>
@@ -3555,40 +3666,45 @@ export default function Home() {
                         ) : (
                             <>
                                 {/* Animation Mode */}
-                                {paths.length >= 2 && (
+                                {activePaths.length >= 2 && (
                                     <div className="animation-controls">
                                         <div className="wrap">
-                                            <label className="label">Start Path</label>
+                                            <label className="label">{t("animation.startPath")}</label>
                                             <select
                                                 value={morphingFromIndex}
                                                 onChange={(e) => setMorphingFromIndex(parseInt(e.target.value))}
                                                 className="select"
                                             >
-                                                {paths.map((_, index) => (
-                                                    <option key={index} value={index}>
-                                                        Path {index + 1}
+                                                {activePaths.map((path, index) => (
+                                                    <option key={index} value={index} disabled={!path.trim()}>
+                                                        {t("pathEditor.path")} {index + 1}{" "}
+                                                        {path.trim() ? "" : "(Empty)"}
                                                     </option>
                                                 ))}
                                             </select>
-                                            <label className="label">End Path</label>
+                                            <label className="label">{t("animation.endPath")}</label>
                                             <select
                                                 value={morphingToIndex}
                                                 onChange={(e) => setMorphingToIndex(parseInt(e.target.value))}
                                                 className="select"
                                             >
-                                                {paths.map((_, index) => (
-                                                    <option key={index} value={index}>
-                                                        Path {index + 1}
+                                                {activePaths.map((path, index) => (
+                                                    <option key={index} value={index} disabled={!path.trim()}>
+                                                        {t("pathEditor.path")} {index + 1}{" "}
+                                                        {path.trim() ? "" : "(Empty)"}
                                                     </option>
                                                 ))}
                                             </select>
 
                                             <div className="button-wrap">
-                                                <Tooltip content={isAnimating ? "Pause" : "Play"} position="bottom">
+                                                <Tooltip
+                                                    content={isAnimating ? t("animation.pause") : t("animation.play")}
+                                                    position="bottom"
+                                                >
                                                     <RippleButton
                                                         onClick={toggleAnimation}
                                                         className={"btn icon primary"}
-                                                        disabled={paths.filter((p) => p.trim()).length < 2}
+                                                        disabled={activePaths.filter((p) => p.trim()).length < 2}
                                                     >
                                                         {isAnimating ? (
                                                             <>
@@ -3601,11 +3717,11 @@ export default function Home() {
                                                         )}
                                                     </RippleButton>
                                                 </Tooltip>
-                                                <Tooltip content="Stop" position="bottom">
+                                                <Tooltip content={t("animation.stop")} position="bottom">
                                                     <RippleButton
                                                         onClick={resetAnimation}
                                                         className="btn icon secondary"
-                                                        disabled={paths.filter((p) => p.trim()).length < 2}
+                                                        disabled={activePaths.filter((p) => p.trim()).length < 2}
                                                     >
                                                         <Square size={16} />
                                                     </RippleButton>
@@ -3614,19 +3730,21 @@ export default function Home() {
                                         </div>
 
                                         <div className="wrap animation-wrap">
-                                            <label className="label">Animation Progress</label>
+                                            <label className="label">{t("animation.progress")}</label>
                                             <input
                                                 type="range"
                                                 min={0}
                                                 max={1}
                                                 step={0.01}
-                                                value={t}
-                                                onChange={(e) => setT(parseFloat(e.target.value))}
+                                                value={animationProgress}
+                                                onChange={(e) => setAnimationProgress(parseFloat(e.target.value))}
                                             />
-                                            <span className="chip chip--centered">{Math.round(t * 100)}%</span>
+                                            <span className="chip chip--centered">
+                                                {Math.round(animationProgress * 100)}%
+                                            </span>
                                         </div>
                                         <div className="wrap animation-wrap--bottom">
-                                            <label className="label">Animation Speed</label>
+                                            <label className="label">{t("animation.speed")}</label>
                                             <input
                                                 type="range"
                                                 min={0.5}
@@ -3640,7 +3758,7 @@ export default function Home() {
                                     </div>
                                 )}
 
-                                {paths.length >= 2 && morphingPath ? (
+                                {activePaths.length >= 2 && morphingPath ? (
                                     <div className="preview-container">
                                         {/* SVG 미리보기 */}
                                         <div className="preview">
@@ -3660,8 +3778,8 @@ export default function Home() {
                                             </svg>
                                         </div>
                                         <div className="animation-export-controls">
-                                            <label className="label">Export Normalized Paths</label>
-                                            <Tooltip content="Export normalized start path" position="bottom">
+                                            <label className="label">{t("export.normalizedPaths")}</label>
+                                            <Tooltip content={t("tooltip.exportNormalizedStart")} position="bottom">
                                                 <RippleButton
                                                     onClick={() =>
                                                         exportSingleNormalizedPath(
@@ -3675,10 +3793,10 @@ export default function Home() {
                                                     disabled={!normalizedFromPath}
                                                 >
                                                     <Download size={14} />
-                                                    Start Path
+                                                    {t("export.fromPath")}
                                                 </RippleButton>
                                             </Tooltip>
-                                            <Tooltip content="Export normalized end path" position="bottom">
+                                            <Tooltip content={t("tooltip.exportNormalizedEnd")} position="bottom">
                                                 <RippleButton
                                                     onClick={() =>
                                                         exportSingleNormalizedPath(
@@ -3692,10 +3810,10 @@ export default function Home() {
                                                     disabled={!normalizedToPath}
                                                 >
                                                     <Download size={14} />
-                                                    End Path
+                                                    {t("export.toPath")}
                                                 </RippleButton>
                                             </Tooltip>
-                                            <Tooltip content="Export both normalized paths" position="bottom">
+                                            <Tooltip content={t("tooltip.exportBothNormalized")} position="bottom">
                                                 <RippleButton
                                                     onClick={() =>
                                                         exportAllNormalizedPaths(
@@ -3710,26 +3828,32 @@ export default function Home() {
                                                     disabled={!normalizedFromPath || !normalizedToPath}
                                                 >
                                                     <Download size={14} />
-                                                    Both Paths
+                                                    {t("export.all")}
                                                 </RippleButton>
                                             </Tooltip>
                                             <div className="wrap animation-info-box">
-                                                <div className="animation-info-text">
-                                                    💡 Tip: Animation automatically normalizes paths for smooth
-                                                    morphing. Export individual or both normalized paths to get the
-                                                    optimized versions that produce the same morphing effect.
-                                                </div>
+                                                <div className="animation-info-text">{t("animation.info")}</div>
                                             </div>
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="no-data">At least 2 paths are required</div>
+                                    <div className="no-data">{t("tooltip.normalizeRequired")}</div>
                                 )}
                             </>
                         )}
                     </div>
                 </section>
             </main>
+
+            <Tutorial steps={tutorialSteps} isVisible={showTutorial} onClose={handleCloseTutorial} />
         </div>
+    );
+}
+
+export default function Home() {
+    return (
+        <LanguageProvider>
+            <HomeContent />
+        </LanguageProvider>
     );
 }
