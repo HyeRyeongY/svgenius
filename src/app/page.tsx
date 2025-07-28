@@ -173,7 +173,7 @@ function getAnchorPoints(path: string): AnchorPoint[] {
 /* export */
 
 // 개별 정규화된 패스를 내보내는 함수
-function exportSingleNormalizedPath(path: string, morphingViewBox: string, pathIndex: number, pathType: "from" | "to") {
+function exportSingleNormalizedPath(path: string, morphingViewBox: string, pathIndex: number, pathType: "from" | "to", t: (key: string) => string) {
     // 브라우저 환경에서만 실행되도록 체크
     if (typeof window === "undefined") {
         return;
@@ -205,7 +205,8 @@ function exportAllNormalizedPaths(
     normalizedToPath: string,
     morphingViewBox: string,
     morphingFromIndex: number,
-    morphingToIndex: number
+    morphingToIndex: number,
+    t: (key: string) => string
 ) {
     // 브라우저 환경에서만 실행되도록 체크
     if (typeof window === "undefined") {
@@ -3786,7 +3787,8 @@ function HomeContent() {
                                                             normalizedFromPath,
                                                             morphingViewBox,
                                                             morphingFromIndex,
-                                                            "from"
+                                                            "from",
+                                                            t
                                                         )
                                                     }
                                                     className="btn secondary"
@@ -3803,7 +3805,8 @@ function HomeContent() {
                                                             normalizedToPath,
                                                             morphingViewBox,
                                                             morphingToIndex,
-                                                            "to"
+                                                            "to",
+                                                            t
                                                         )
                                                     }
                                                     className="btn secondary "
@@ -3821,7 +3824,8 @@ function HomeContent() {
                                                             normalizedToPath,
                                                             morphingViewBox,
                                                             morphingFromIndex,
-                                                            morphingToIndex
+                                                            morphingToIndex,
+                                                            t
                                                         )
                                                     }
                                                     className="btn secondary"
