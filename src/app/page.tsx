@@ -18,6 +18,7 @@ import {
     Github,
     BookAlert,
     FileText,
+    ArrowRight,
 } from "lucide-react";
 import Tooltip from "../components/Tooltip";
 import RippleButton from "../components/RippleButton";
@@ -3227,15 +3228,20 @@ function HomeContent() {
 
     const handleSetStartPoint = () => {
         if (selectedIndex !== null && currentPath && previewIndex !== null) {
+            // 중복 실행 방지를 위해 선택된 인덱스를 임시 저장
+            const targetIndex = selectedIndex;
+            
+            // 즉시 선택 상태 해제로 중복 클릭 방지
+            setSelectedIndex(null);
+            
             // 실제 Path 재정렬 수행
-            const reorderedPath = reorderPathSafely(currentPath, selectedIndex);
+            const reorderedPath = reorderPathSafely(currentPath, targetIndex);
             const newPaths = [...paths];
             newPaths[previewIndex] = reorderedPath;
             setPaths(newPaths);
             saveToHistory(newPaths);
             setCurrentStartIndex(0); // 재정렬 후 시작점을 0으로 리셋
-            setSelectedIndex(null);
-            toast.success(`Start point redefined to anchor #${selectedIndex}`);
+            toast.success(`Start point redefined to anchor #${targetIndex}`);
         }
     };
 
@@ -3259,6 +3265,11 @@ function HomeContent() {
     const handleMouseDown = (e: React.MouseEvent<SVGGElement>, index: number) => {
         e.preventDefault();
         e.stopPropagation();
+
+        // 이미 선택된 포인트를 다시 클릭한 경우 중복 처리 방지
+        if (selectedIndex === index) {
+            return;
+        }
 
         const mousePos = getMousePositionFromEvent(e);
         const point = anchorPoints[index];
@@ -3683,6 +3694,9 @@ function HomeContent() {
                                                     </option>
                                                 ))}
                                             </select>
+                                            <div className="arrow-separator">
+                                                <ArrowRight size={16} className="arrow-icon" />
+                                            </div>
                                             <label className="label">{t("animation.endPath")}</label>
                                             <select
                                                 value={morphingToIndex}
