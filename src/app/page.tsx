@@ -25,14 +25,89 @@ import RippleButton from "../components/RippleButton";
 import Tutorial from "../components/Tutorial";
 import LanguageToggle from "../components/LanguageToggle";
 import { LanguageProvider, useLanguage } from "../contexts/LanguageContext";
+import ConfirmationDialog from "../components/ConfirmationDialog"; // Import ConfirmationDialog
 import { gsap } from "gsap";
 
 import Image from "next/image";
 
+// H/V 명령어를 L 명령어로 변환하여 점들이 독립적으로 움직이게 하는 함수
+function normalizePathForIndependentMovement(path: string): string {
+    try {
+        const commands = parseSVGPath(path);
+        const normalizedCommands: string[] = [];
+        let currentX = 0;
+        let currentY = 0;
+
+        for (const cmd of commands) {
+            const commandType = cmd[0];
+            const params = cmd.substring(1).trim();
+            const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+            const isAbsolute = commandType === commandType.toUpperCase();
+
+            switch (commandType.toUpperCase()) {
+                case "M":
+                case "L":
+                    if (numbers.length >= 2) {
+                        const x = parseFloat(numbers[0] || "0");
+                        const y = parseFloat(numbers[1] || "0");
+                        currentX = isAbsolute ? x : currentX + x;
+                        currentY = isAbsolute ? y : currentY + y;
+                    }
+                    normalizedCommands.push(cmd);
+                    break;
+                case "C":
+                    if (numbers.length >= 6) {
+                        const x = parseFloat(numbers[4] || "0");
+                        const y = parseFloat(numbers[5] || "0");
+                        currentX = isAbsolute ? x : currentX + x;
+                        currentY = isAbsolute ? y : currentY + y;
+                    }
+                    normalizedCommands.push(cmd);
+                    break;
+                case "Q":
+                    if (numbers.length >= 4) {
+                        const x = parseFloat(numbers[2] || "0");
+                        const y = parseFloat(numbers[3] || "0");
+                        currentX = isAbsolute ? x : currentX + x;
+                        currentY = isAbsolute ? y : currentY + y;
+                    }
+                    normalizedCommands.push(cmd);
+                    break;
+                case "H":
+                    // H 명령어를 L로 변환
+                    if (numbers.length >= 1) {
+                        const x = parseFloat(numbers[0] || "0");
+                        const targetX = isAbsolute ? x : currentX + x;
+                        normalizedCommands.push(`L ${targetX} ${currentY}`);
+                        currentX = targetX;
+                    }
+                    break;
+                case "V":
+                    // V 명령어를 L로 변환
+                    if (numbers.length >= 1) {
+                        const y = parseFloat(numbers[0] || "0");
+                        const targetY = isAbsolute ? y : currentY + y;
+                        normalizedCommands.push(`L ${currentX} ${targetY}`);
+                        currentY = targetY;
+                    }
+                    break;
+                case "S":
+                case "T":
+                case "A":
+                case "Z":
+                    normalizedCommands.push(cmd);
+                    break;
+            }
+        }
+
+        return normalizedCommands.join(" ");
+    } catch (error) {
+        return path; // 에러 시 원본 반환
+    }
+}
+
 // Function to accurately parse SVG Path by command units
 function parseSVGPath(path: string): string[] {
-    console.log("Parsing path:", path);
-
     const commands: string[] = [];
     let current = "";
     let i = 0;
@@ -45,7 +120,6 @@ function parseSVGPath(path: string): string[] {
             // Save previous command if exists
             if (current) {
                 commands.push(current);
-                console.log("Added command:", current);
             }
             current = char;
         } else {
@@ -58,10 +132,8 @@ function parseSVGPath(path: string): string[] {
     // Add final command
     if (current) {
         commands.push(current);
-        console.log("Added final command:", current);
     }
 
-    console.log("All parsed commands:", commands);
     return commands;
 }
 
@@ -76,16 +148,12 @@ function getAnchorPoints(path: string): AnchorPoint[] {
         let currentY = 0;
         let pointIndex = 0;
 
-        console.log("Getting anchor points for original path commands:", commands);
-
         for (const cmd of commands) {
             const commandType = cmd[0];
             const params = cmd.substring(1).trim();
 
             // 숫자들을 추출
             const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
-
-            console.log(`Processing command: ${commandType} with numbers:`, numbers);
 
             switch (commandType.toUpperCase()) {
                 case "M":
@@ -103,7 +171,6 @@ function getAnchorPoints(path: string): AnchorPoint[] {
                             currentY += y;
                         }
                         points.push({ x: currentX, y: currentY, index: pointIndex++ });
-                        console.log(`${commandType} command: current position (${currentX}, ${currentY})`);
                     }
                     break;
                 case "H":
@@ -115,7 +182,6 @@ function getAnchorPoints(path: string): AnchorPoint[] {
                             currentX += x;
                         }
                         points.push({ x: currentX, y: currentY, index: pointIndex++ });
-                        console.log(`${commandType} command: current position (${currentX}, ${currentY})`);
                     }
                     break;
                 case "V":
@@ -127,7 +193,6 @@ function getAnchorPoints(path: string): AnchorPoint[] {
                             currentY += y;
                         }
                         points.push({ x: currentX, y: currentY, index: pointIndex++ });
-                        console.log(`${commandType} command: current position (${currentX}, ${currentY})`);
                     }
                     break;
                 case "C":
@@ -142,7 +207,6 @@ function getAnchorPoints(path: string): AnchorPoint[] {
                             currentY += y;
                         }
                         points.push({ x: currentX, y: currentY, index: pointIndex++ });
-                        console.log(`${commandType} command: current position (${currentX}, ${currentY})`);
                     }
                     break;
                 case "Q":
@@ -157,16 +221,13 @@ function getAnchorPoints(path: string): AnchorPoint[] {
                             currentY += y;
                         }
                         points.push({ x: currentX, y: currentY, index: pointIndex++ });
-                        console.log(`${commandType} command: current position (${currentX}, ${currentY})`);
                     }
                     break;
             }
         }
 
-        console.log("Final anchor points:", points);
         return points;
     } catch (error) {
-        console.warn("Failed to get anchor points:", error);
         return [];
     }
 }
@@ -174,7 +235,13 @@ function getAnchorPoints(path: string): AnchorPoint[] {
 /* export */
 
 // 개별 정규화된 패스를 내보내는 함수
-function exportSingleNormalizedPath(path: string, morphingViewBox: string, pathIndex: number, pathType: "from" | "to", t: (key: string) => string) {
+function exportSingleNormalizedPath(
+    path: string,
+    morphingViewBox: string,
+    pathIndex: number,
+    pathType: "from" | "to",
+    t: (key: string) => string
+) {
     // 브라우저 환경에서만 실행되도록 체크
     if (typeof window === "undefined") {
         return;
@@ -454,8 +521,8 @@ function optimizePathCommands(commands: string[]): string[] {
                         currentEndY += y;
                     }
 
-                    // 같은 위치로의 곡선은 제거
-                    if (Math.abs(currentEndX - prevEndX) < 0.001 && Math.abs(currentEndY - prevEndY) < 0.001) {
+                    // 같은 위치로의 곡선은 제거 (tolerance 증가)
+                    if (Math.abs(currentEndX - prevEndX) < 1 && Math.abs(currentEndY - prevEndY) < 1) {
                         shouldAdd = false;
                     }
                 }
@@ -526,7 +593,6 @@ function optimizePathCommands(commands: string[]): string[] {
         }
     }
 
-    console.log("Optimized commands:", optimized);
     return optimized;
 }
 
@@ -702,15 +768,11 @@ function normalizePathPointCount(path: string, targetPointCount: number): string
         const commands = parseSVGPath(path);
         const currentPointCount = getAnchorPoints(path).length;
 
-        console.log(`Normalizing path: current=${currentPointCount}, target=${targetPointCount}`);
-
         if (currentPointCount >= targetPointCount) {
-            console.log("Already has enough points, returning original");
             return path; // 이미 충분한 포인트가 있으면 그대로 반환
         }
 
         const pointsToAdd = targetPointCount - currentPointCount;
-        console.log(`Need to add ${pointsToAdd} points`);
 
         // 가장 간단한 방법: 기존 선분들 사이에 중간점을 추가
         let result = path;
@@ -719,7 +781,6 @@ function normalizePathPointCount(path: string, targetPointCount: number): string
         for (let i = 0; i < pointsToAdd; i++) {
             result = addSinglePointToPath(result);
             const newPoints = getAnchorPoints(result).length;
-            console.log(`Round ${i + 1}: ${currentPoints} -> ${newPoints} points`);
             currentPoints = newPoints;
 
             if (currentPoints >= targetPointCount) {
@@ -727,10 +788,8 @@ function normalizePathPointCount(path: string, targetPointCount: number): string
             }
         }
 
-        console.log(`Final normalization: ${currentPointCount} -> ${getAnchorPoints(result).length} points`);
         return result;
     } catch (error) {
-        console.warn("Path normalization failed:", error);
         return path;
     }
 }
@@ -812,7 +871,6 @@ function removeDuplicatePoints(path: string): string {
 
         return cleanCommands.join(" ");
     } catch (error) {
-        console.warn("Failed to remove duplicate points:", error);
         return path;
     }
 }
@@ -1011,12 +1069,6 @@ function addSinglePointToPath(path: string): string {
         segments.sort((a, b) => b.distance - a.distance);
         const longestSegment = segments[0];
 
-        console.log(
-            `Adding point to ${longestSegment.curveType} segment at index ${
-                longestSegment.index
-            }, distance: ${longestSegment.distance.toFixed(2)}`
-        );
-
         // 해당 명령어를 보간된 점으로 분할
         const newCommands = [...commands];
         const originalCmd = longestSegment.command;
@@ -1069,13 +1121,10 @@ function addSinglePointToPath(path: string): string {
         // 이렇게 하면 원래 곡선이 유지되면서 포인트만 추가됨
         newCommands.splice(longestSegment.index + 1, 0, `L ${midX.toFixed(3)} ${midY.toFixed(3)}`);
 
-        console.log(`Added midpoint at (${midX.toFixed(3)}, ${midY.toFixed(3)}) for ${longestSegment.curveType} curve`);
-
         // 결과에서 중복 포인트 제거
         const result = newCommands.join(" ");
         return removeDuplicatePoints(result);
     } catch (error) {
-        console.warn("Failed to add point to path:", error);
         return path;
     }
 }
@@ -1087,14 +1136,10 @@ function normalizePathPreservingCurves(path: string, targetPointCount: number): 
         const currentPoints = getAnchorPoints(cleanPath);
 
         if (currentPoints.length >= targetPointCount) {
-            console.log(`Already has ${currentPoints.length} points, target is ${targetPointCount}`);
             return cleanPath;
         }
 
-        console.log(`Curve-preserving normalization: ${currentPoints.length} -> ${targetPointCount} points`);
-
         const pointsToAdd = targetPointCount - currentPoints.length;
-        console.log(`Need to add ${pointsToAdd} points while preserving curves`);
 
         // 원본 명령어들을 분석하여 곡선과 직선을 구분
         const commands = parseSVGPath(cleanPath);
@@ -1128,11 +1173,6 @@ function normalizePathPreservingCurves(path: string, targetPointCount: number): 
                 remainingPoints--;
             }
         }
-
-        console.log(
-            "Point allocation:",
-            segmentWeights.map((s) => `${s.type}:${s.pointsToAdd}`)
-        );
 
         // 새로운 Path 구성
         const newCommands: string[] = [];
@@ -1193,11 +1233,9 @@ function normalizePathPreservingCurves(path: string, targetPointCount: number): 
 
         const result = newCommands.join(" ");
         const finalPoints = getAnchorPoints(result).length;
-        console.log(`Final curve-preserving normalization: ${currentPoints.length} -> ${finalPoints} points`);
 
         return result;
     } catch (error) {
-        console.warn("Curve-preserving normalization failed:", error);
         return path;
     }
 }
@@ -1592,7 +1630,6 @@ function calculateTotalPathLength(path: string): number {
 
         return totalLength;
     } catch (error) {
-        console.warn("Failed to calculate path length:", error);
         return 0;
     }
 }
@@ -1750,7 +1787,6 @@ function getPointAtDistance(path: string, targetDistance: number): { x: number; 
         // 목표 거리가 Path 끝을 넘어선 경우 마지막 점 반환
         return { x: currentX, y: currentY };
     } catch (error) {
-        console.warn("Failed to get point at distance:", error);
         return null;
     }
 }
@@ -1860,7 +1896,6 @@ function convertPathToCubicCurves(path: string): string {
 
         return result.trim();
     } catch (error) {
-        console.error("Error converting path to cubic curves:", error);
         return path;
     }
 }
@@ -1870,12 +1905,9 @@ function normalizeAllPaths(paths: string[]): string[] {
     const pointCounts = paths.map((path) => getAnchorPoints(path).length);
     const maxPoints = Math.max(...pointCounts);
 
-    console.log("Point counts:", pointCounts, "Max:", maxPoints);
-
     return paths.map((path, index) => {
         const currentPoints = pointCounts[index];
         if (currentPoints < maxPoints) {
-            console.log(`Curve-preserving normalizing path ${index}: ${currentPoints} -> ${maxPoints} points`);
             return normalizePathPreservingCurves(path, maxPoints);
         }
         return path;
@@ -1886,12 +1918,11 @@ function normalizeAllPaths(paths: string[]): string[] {
 function reorderPathSafely(path: string, startIndex: number): string {
     try {
         const commands = parseSVGPath(path);
-        console.log("Original path:", path);
-        console.log("Commands:", commands);
-        console.log("Start index:", startIndex);
+
+        // 디버깅: 원본 점 개수 추적
+        const originalPointCount = getAnchorPoints(path).length;
 
         if (startIndex <= 0 || startIndex >= commands.length) {
-            console.log("Start index out of of range, returning original path");
             return path;
         }
 
@@ -2004,8 +2035,6 @@ function reorderPathSafely(path: string, startIndex: number): string {
             }
         }
 
-        console.log("Command end points:", commandEndPoints);
-
         if (startIndex >= commandEndPoints.length) {
             return path;
         }
@@ -2029,7 +2058,7 @@ function reorderPathSafely(path: string, startIndex: number): string {
             const cmdType = originalCmd[0];
 
             if (cmdType.toUpperCase() === "M") {
-                // M 명령어는 L로 변경
+                // M 명령어는 L로 변경 (path 연속성을 위해)
                 const params = originalCmd.substring(1).trim();
                 const isAbsolute = cmdType === "M";
                 reorderedCommands.push(isAbsolute ? `L${params}` : `l${params}`);
@@ -2040,7 +2069,6 @@ function reorderPathSafely(path: string, startIndex: number): string {
         }
 
         // 시작점 이전 명령어들을 원본 그대로 추가 (단, M->L 변환)
-        // 시작점이 곡선이 아닌 경우에만 startIndex 포함, 곡선인 경우는 완전히 건너뛰고 마지막에 추가
         const isStartCurve =
             startCommandType.toUpperCase() !== "M" &&
             startCommandType.toUpperCase() !== "L" &&
@@ -2053,7 +2081,7 @@ function reorderPathSafely(path: string, startIndex: number): string {
             const cmdType = originalCmd[0];
 
             if (cmdType.toUpperCase() === "M") {
-                // M 명령어는 L로 변경
+                // M 명령어는 L로 변경 (path 연속성을 위해)
                 const params = originalCmd.substring(1).trim();
                 const isAbsolute = cmdType === "M";
                 reorderedCommands.push(isAbsolute ? `L${params}` : `l${params}`);
@@ -2063,22 +2091,31 @@ function reorderPathSafely(path: string, startIndex: number): string {
             }
         }
 
-        // 시작점이 곡선이 아닌 경우(M, L, H, V)에는 마지막에 해당 명령어 추가 (L로 변환)
-        if (!isStartCurve) {
-            if (startCommandType.toUpperCase() === "M") {
-                const params = startCommand.substring(1).trim();
-                const isAbsolute = startCommandType === "M";
-                reorderedCommands.push(isAbsolute ? `L${params}` : `l${params}`);
+        // 시작점이 곡선인 경우, 해당 곡선을 마지막에 추가하여 곡선 형태 유지
+        if (isStartCurve) {
+            const cmdType = startCommandType;
+            const params = startCommand.substring(1).trim();
+            const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+
+            if (cmdType.toUpperCase() === "C" && numbers.length >= 6) {
+                // C 곡선: 제어점 유지, 끝점을 정확히 시작점으로 설정
+                const x1 = numbers[0];
+                const y1 = numbers[1];
+                const x2 = numbers[2];
+                const y2 = numbers[3];
+                // 끝점을 정확히 시작점과 같게 하여 optimizePathCommands가 중복 제거하도록 함
+                reorderedCommands.push(
+                    `C ${x1} ${y1} ${x2} ${y2} ${newStartPoint.x.toFixed(3)} ${newStartPoint.y.toFixed(3)}`
+                );
+            } else if (cmdType.toUpperCase() === "Q" && numbers.length >= 4) {
+                // Q 곡선: 제어점 유지, 끝점을 정확히 시작점으로 설정
+                const x1 = numbers[0];
+                const y1 = numbers[1];
+                reorderedCommands.push(`Q ${x1} ${y1} ${newStartPoint.x.toFixed(3)} ${newStartPoint.y.toFixed(3)}`);
             } else {
+                // 다른 곡선들
                 reorderedCommands.push(startCommand);
             }
-        }
-
-        // 시작점이 곡선 명령어였다면, 그 곡선을 마지막에 추가하여 완전한 형태 유지
-        // 위에서 이미 isStartCurve 조건으로 중복 처리되었으므로 이 부분은 제거하거나 간소화
-        if (isStartCurve) {
-            // 곡선 명령어(C, Q, S, T)를 마지막에 추가 - 기존 위치에서는 이미 제거됨
-            reorderedCommands.push(startCommand);
         }
 
         // Z 명령어가 있었다면 추가
@@ -2090,10 +2127,22 @@ function reorderPathSafely(path: string, startIndex: number): string {
         const optimizedCommands = optimizePathCommands(reorderedCommands);
 
         const result = optimizedCommands.join(" ");
-        console.log("Final reordered path:", result);
+
+        // 디버깅: 최종 점 개수 확인
+        const finalPointCount = getAnchorPoints(result).length;
+
+        if (finalPointCount !== originalPointCount) {
+            console.warn("⚠️ POINT COUNT MISMATCH!", {
+                original: originalPointCount,
+                final: finalPointCount,
+                difference: finalPointCount - originalPointCount,
+                reorderedCommands: reorderedCommands,
+                optimizedCommands: optimizedCommands,
+            });
+        }
+
         return result;
     } catch (error) {
-        console.warn("Path reordering failed:", error);
         return path;
     }
 }
@@ -2199,7 +2248,6 @@ function getPathBounds(path: string): { x: number; y: number; width: number; hei
             height: maxY === -Infinity ? 0 : maxY - minY,
         };
     } catch (error) {
-        console.error("Error calculating path bounds:", error);
         return { x: 0, y: 0, width: 400, height: 400 };
     }
 }
@@ -2240,7 +2288,6 @@ function scalePath(path: string, targetBounds: { x: number; y: number; width: nu
 
         return result;
     } catch (error) {
-        console.error("Error scaling path:", error);
         return path;
     }
 }
@@ -2381,7 +2428,6 @@ function interpolatePaths(path1: string, path2: string, t: number): string {
 
         return result.trim();
     } catch (error) {
-        console.warn("Path interpolation failed:", error);
         return t < 0.5 ? path1 : path2;
     }
 }
@@ -2395,7 +2441,9 @@ const tutorialDemoPaths = [
 function HomeContent() {
     const { t } = useLanguage();
     const [paths, setPaths] = useState<string[]>([
-        "M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z",
+        normalizePathForIndependentMovement(
+            "M184 0C185.202 0 186.373 0.133369 187.5 0.384766C191.634 0.129837 195.802 0 200 0C310.457 0 400 89.5431 400 200C400 310.457 310.457 400 200 400C195.802 400 191.634 399.869 187.5 399.614C186.373 399.866 185.202 400 184 400H16C7.16344 400 0 392.837 0 384V16C4.63895e-06 7.16345 7.16345 0 16 0H184Z"
+        ),
     ]);
     const [pathHistory, setPathHistory] = useState<string[][]>([
         [
@@ -2415,6 +2463,12 @@ function HomeContent() {
     const timelineRef = useRef<gsap.core.Timeline | null>(null);
     const [viewBox, setViewBox] = useState("0 0 400 400");
     const [showTutorial, setShowTutorial] = useState(false);
+
+    // Confirmation Dialog State
+    const [isConfirmOpen, setIsConfirmOpen] = useState(false);
+    const [confirmTitle, setConfirmTitle] = useState("");
+    const [confirmMessage, setConfirmMessage] = useState("");
+    const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
 
     // 튜토리얼 전용 상태들
     const [tutorialPaths, setTutorialPaths] = useState<string[]>([]);
@@ -2525,7 +2579,6 @@ function HomeContent() {
     const saveToHistory = useCallback(
         (newPaths: string[]) => {
             if (!Array.isArray(newPaths)) {
-                console.warn("saveToHistory: newPaths is not an array", newPaths);
                 return;
             }
 
@@ -2582,7 +2635,8 @@ function HomeContent() {
 
     const updatePath = (index: number, value: string) => {
         const newPaths = [...paths];
-        newPaths[index] = value;
+        // H/V 명령어를 L로 변환하여 점들이 독립적으로 움직이게 함
+        newPaths[index] = normalizePathForIndependentMovement(value);
         setPaths(newPaths);
         saveToHistory(newPaths);
         setIsNormalized(false); // Reset normalization state on path modification
@@ -2947,7 +3001,6 @@ function HomeContent() {
 
             return { minX, minY, maxX, maxY };
         } catch (error) {
-            console.warn("Failed to calculate path bounding box:", error);
             return { minX: 0, minY: 0, maxX: 400, maxY: 400 };
         }
     }
@@ -3221,19 +3274,86 @@ function HomeContent() {
 
             return path; // 포인트를 찾지 못한 경우 원본 반환
         } catch (error) {
-            console.warn("Failed to update point position:", error);
             return path;
         }
     };
 
     const handleSetStartPoint = () => {
         if (selectedIndex !== null && currentPath && previewIndex !== null) {
-            // 중복 실행 방지를 위해 선택된 인덱스를 임시 저장
-            const targetIndex = selectedIndex;
-            
-            // 즉시 선택 상태 해제로 중복 클릭 방지
-            setSelectedIndex(null);
-            
+            // 선택된 점이 곡선인지 확인
+            const commands = parseSVGPath(currentPath);
+            const commandEndPoints: Array<{ command: string; commandIndex: number }> = [];
+            let currentX = 0,
+                currentY = 0;
+
+            for (let i = 0; i < commands.length; i++) {
+                const cmd = commands[i];
+                const cmdType = cmd[0];
+                const params = cmd.substring(1).trim();
+                const numbers = params.match(/[-+]?(?:\d*\.?\d+(?:[eE][-+]?\d+)?)/g) || [];
+                const isAbsolute = cmdType === cmdType.toUpperCase();
+
+                switch (cmdType.toUpperCase()) {
+                    case "M":
+                    case "L":
+                        if (numbers.length >= 2) {
+                            const x = parseFloat(numbers[0] || "0");
+                            const y = parseFloat(numbers[1] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                            commandEndPoints.push({ command: cmd, commandIndex: i });
+                        }
+                        break;
+                    case "H":
+                        if (numbers.length >= 1) {
+                            const x = parseFloat(numbers[0] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            commandEndPoints.push({ command: cmd, commandIndex: i });
+                        }
+                        break;
+                    case "V":
+                        if (numbers.length >= 1) {
+                            const y = parseFloat(numbers[0] || "0");
+                            currentY = isAbsolute ? y : currentY + y;
+                            commandEndPoints.push({ command: cmd, commandIndex: i });
+                        }
+                        break;
+                    case "C":
+                        if (numbers.length >= 6) {
+                            const x = parseFloat(numbers[4] || "0");
+                            const y = parseFloat(numbers[5] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                            commandEndPoints.push({ command: cmd, commandIndex: i });
+                        }
+                        break;
+                    case "Q":
+                        if (numbers.length >= 4) {
+                            const x = parseFloat(numbers[2] || "0");
+                            const y = parseFloat(numbers[3] || "0");
+                            currentX = isAbsolute ? x : currentX + x;
+                            currentY = isAbsolute ? y : currentY + y;
+                            commandEndPoints.push({ command: cmd, commandIndex: i });
+                        }
+                        break;
+                }
+            }
+
+            const isCurvePoint =
+                selectedIndex < commandEndPoints.length &&
+                ["C", "Q", "S", "T"].includes(commandEndPoints[selectedIndex].command[0].toUpperCase());
+
+            // 곡선 점인 경우 확인 팝업 표시
+            if (isCurvePoint) {
+                const confirmed = window.confirm(
+                    `Setting anchor #${selectedIndex} as the start point will add a new point to preserve the curve shape.\n\nDo you want to continue?`
+                );
+
+                if (!confirmed) {
+                    return; // 사용자가 취소한 경우 함수 종료
+                }
+            }
+
             // 실제 Path 재정렬 수행
             const reorderedPath = reorderPathSafely(currentPath, targetIndex);
             const newPaths = [...paths];
@@ -3241,7 +3361,9 @@ function HomeContent() {
             setPaths(newPaths);
             saveToHistory(newPaths);
             setCurrentStartIndex(0); // 재정렬 후 시작점을 0으로 리셋
-            toast.success(`Start point redefined to anchor #${targetIndex}`);
+            setSelectedIndex(null);
+
+            toast.success(`Start point redefined to anchor #${selectedIndex}`);
         }
     };
 
@@ -3291,7 +3413,7 @@ function HomeContent() {
         <div className="app-wrapper">
             <header className="header">
                 <div className="logo-area">
-                    <Image src="/SVGenius.svg" alt="SVGenius Logo" width={32} height={32} />
+                    <Image src="/SVGenius.svg" alt="SVGenius Logo" width={32} height={32} priority />
                     <div>
                         <h1 className="title">SVGenius</h1>
                         <p className="subtitle">{t("header.subtitle")}</p>
