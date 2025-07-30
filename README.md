@@ -261,7 +261,6 @@ Complete support for all standard SVG path commands:
 ## Contact
 
 **Developer**: HyeRyeong Yoon  
-**Portfolio**: [yoonhr.com](https://yoonhr.com/)  
 **GitHub**: [github.com/HyeRyeongY](https://github.com/HyeRyeongY)
 
 ---
