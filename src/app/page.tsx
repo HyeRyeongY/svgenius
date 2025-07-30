@@ -2345,8 +2345,8 @@ function interpolatePaths(path1: string, path2: string, t: number): string {
             return t < 0.5 ? path1 : path2;
         }
 
-        // GSAP의 부드러운 보간을 사용
-        const easedT = gsap.parseEase("power2.inOut")(t);
+        // Linear 보간을 사용 (예측 가능한 모핑)
+        const easedT = t;
 
         let result = "";
         let currentX = 0,
@@ -2493,6 +2493,7 @@ function HomeContent() {
             title: t("tutorial.pointEditing.title"),
             content: t("tutorial.pointEditing.content"),
             position: "left" as const,
+            action: () => setIsAnimationMode(false), // Point Editing 모드로 전환
         },
         {
             target: ".toggle-btn",
@@ -2508,7 +2509,7 @@ function HomeContent() {
             position: "left" as const,
         },
         {
-            target: ".preview-section",
+            target: ".animation-export-controls",
             title: t("tutorial.exportPaths.title"),
             content: t("tutorial.exportPaths.content"),
             position: "left" as const,
@@ -2522,7 +2523,12 @@ function HomeContent() {
         const hasShownToday = lastShown === today;
 
         if (!hasShownToday && paths.length === 1 && paths[0] === "") {
-            // Show tutorial only on first visit of the day with empty paths
+            // 튜토리얼용 데모 패스 추가 (원과 오각형, 5개 포인트로 정규화됨)
+            const circlePath = "M200 50 L276.39 134.82 L243.51 276.82 L156.49 276.82 L123.61 134.82 Z";
+            const pentagonPath = "M200 50 L276.39 134.82 L243.51 235.11 L156.49 235.11 L123.61 134.82 Z";
+            
+            setPaths([circlePath, pentagonPath]);
+            setPathHistory([[circlePath, pentagonPath]]);
             setShowTutorial(true);
         }
     }, [paths]);

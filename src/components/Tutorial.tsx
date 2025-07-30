@@ -27,6 +27,13 @@ export default function Tutorial({ steps, isVisible, onClose, onStepChange }: Tu
     const [isTransitioning, setIsTransitioning] = useState(false);
     const overlayRef = useRef<HTMLDivElement>(null);
 
+    // 튜토리얼이 열릴 때마다 처음부터 시작
+    useEffect(() => {
+        if (isVisible) {
+            setCurrentStep(0);
+        }
+    }, [isVisible]);
+
     useEffect(() => {
         if (!isVisible || !steps[currentStep]) return;
 

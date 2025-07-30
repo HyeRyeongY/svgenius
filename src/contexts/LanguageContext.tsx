@@ -73,7 +73,7 @@ const translations = {
         "mode.animationTest": "Animation Test",
 
         // Tutorial
-        "tutorial.addPaths.title": "Welcome to SVG Morphing!",
+        "tutorial.addPaths.title": "Welcome to SVGenius!",
         "tutorial.addPaths.content":
             "I've added two demo paths for you to explore morphing animations.\nIn normal use, you would add your own SVG paths here by pasting path data or importing SVG files.",
         "tutorial.pointEditing.title": "Point Editing Mode",
@@ -201,7 +201,7 @@ const translations = {
         "mode.animationTest": "애니메이션 테스트",
 
         // Tutorial
-        "tutorial.addPaths.title": "SVG 모핑에 오신 것을 환영합니다!",
+        "tutorial.addPaths.title": "SVGenius에 오신 것을 환영합니다!",
         "tutorial.addPaths.content":
             "모핑 애니메이션을 체험할 수 있도록 두 개의 데모 패스를 준비했습니다.\n일반적으로는 여기에 패스 데이터를 붙여넣거나 SVG 파일을 가져와서 자신만의 SVG 패스를 추가하게 됩니다.",
         "tutorial.pointEditing.title": "포인트 편집 모드",
