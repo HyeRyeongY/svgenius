@@ -2469,6 +2469,7 @@ function HomeContent() {
     const [confirmTitle, setConfirmTitle] = useState("");
     const [confirmMessage, setConfirmMessage] = useState("");
     const [confirmAction, setConfirmAction] = useState<(() => void) | null>(null);
+    const [confirmTargetElement, setConfirmTargetElement] = useState<HTMLElement | null>(null);
 
     // 튜토리얼 전용 상태들
     const [tutorialPaths, setTutorialPaths] = useState<string[]>([]);
@@ -2531,6 +2532,17 @@ function HomeContent() {
         // 튜토리얼 종료 후 Point Editing 모드로 돌아가기
         setIsAnimationMode(false);
     };
+
+    // Confirmation Dialog handlers
+    const handleConfirmClose = useCallback(() => {
+        setIsConfirmOpen(false);
+    }, []);
+
+    const handleConfirmAction = useCallback(() => {
+        if (confirmAction) {
+            confirmAction();
+        }
+    }, [confirmAction]);
 
     // Morphing을 위한 계산된 Path와 ViewBox
     const { morphingPath, morphingViewBox, normalizedFromPath, normalizedToPath } = useMemo(() => {
@@ -3278,7 +3290,7 @@ function HomeContent() {
         }
     };
 
-    const handleSetStartPoint = () => {
+    const handleSetStartPoint = (event: React.MouseEvent<HTMLButtonElement>) => {
         if (selectedIndex !== null && currentPath && previewIndex !== null) {
             // 선택된 점이 곡선인지 확인
             const commands = parseSVGPath(currentPath);
@@ -3345,25 +3357,52 @@ function HomeContent() {
 
             // 곡선 점인 경우 확인 팝업 표시
             if (isCurvePoint) {
-                const confirmed = window.confirm(
-                    `Setting anchor #${selectedIndex} as the start point will add a new point to preserve the curve shape.\n\nDo you want to continue?`
-                );
+                setConfirmTitle(t("confirm.setStartPoint.title"));
+                setConfirmMessage(t("confirm.setStartPoint.message").replace("{index}", selectedIndex.toString()));
+                setConfirmTargetElement(event.currentTarget);
+                setConfirmAction(() => () => {
+                    // 실제 Path 재정렬 수행
+                    const reorderedPath = reorderPathSafely(currentPath, selectedIndex);
+                    const newPaths = [...activePaths];
+                    newPaths[previewIndex] = reorderedPath;
 
-                if (!confirmed) {
-                    return; // 사용자가 취소한 경우 함수 종료
-                }
+                    if (isTutorialMode) {
+                        setTutorialPaths(newPaths);
+                    } else {
+                        setPaths(newPaths);
+
+                        // Add to history
+                        const newHistory = pathHistory.slice(0, historyIndex + 1);
+                        newHistory.push(newPaths);
+                        setPathHistory(newHistory);
+                        setHistoryIndex(newHistory.length - 1);
+                    }
+
+                    setCurrentStartIndex(0); // 재정렬 후 시작점을 0으로 리셋
+                    setSelectedIndex(null); // 선택된 포인트 리셋
+
+                    toast.success(t("toast.startPointSet"));
+                });
+                setIsConfirmOpen(true);
+                return; // 다이얼로그가 열리면 함수 종료
             }
 
-            // 실제 Path 재정렬 수행
-            const reorderedPath = reorderPathSafely(currentPath, targetIndex);
-            const newPaths = [...paths];
+            // 실제 Path 재정렬 수행 (일반적인 경우)
+            const reorderedPath = reorderPathSafely(currentPath, selectedIndex);
+            const newPaths = [...activePaths];
             newPaths[previewIndex] = reorderedPath;
-            setPaths(newPaths);
-            saveToHistory(newPaths);
+
+            if (isTutorialMode) {
+                setTutorialPaths(newPaths);
+            } else {
+                setPaths(newPaths);
+                saveToHistory(newPaths);
+            }
+
             setCurrentStartIndex(0); // 재정렬 후 시작점을 0으로 리셋
             setSelectedIndex(null);
 
-            toast.success(`Start point redefined to anchor #${selectedIndex}`);
+            toast.success(t("toast.startPointSet"));
         }
     };
 
@@ -3986,6 +4025,22 @@ function HomeContent() {
             </main>
 
             <Tutorial steps={tutorialSteps} isVisible={showTutorial} onClose={handleCloseTutorial} />
+
+            {isConfirmOpen && (
+                <ConfirmationDialog
+                    isOpen={isConfirmOpen}
+                    onClose={handleConfirmClose}
+                    onConfirm={handleConfirmAction}
+                    title={confirmTitle}
+                    message={confirmMessage}
+                    type="warning"
+                    confirmText={t("common.continue")}
+                    cancelText={t("common.cancel")}
+                    targetElement={confirmTargetElement}
+                    position="bottom"
+                    alignment="right"
+                />
+            )}
         </div>
     );
 }

@@ -191,7 +191,11 @@ export default function Tutorial({ steps, isVisible, onClose, onStepChange }: Tu
                 </div>
                 
                 <div className="tutorial-content">
-                    {steps[currentStep]?.content}
+                    {steps[currentStep]?.content.split('\n').map((line, index) => (
+                        <div key={index} className="tutorial-line">
+                            {line}
+                        </div>
+                    ))}
                 </div>
                 
                 <div className="tutorial-footer">

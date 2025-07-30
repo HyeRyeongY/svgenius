@@ -1,3 +1,4 @@
+@charset "UTF-8";
 @font-face {
   font-family: "Pretendard-Regular";
   src: url("https://fastly.jsdelivr.net/gh/Project-Noonnu/noonfonts_2107@1.1/Pretendard-Regular.woff") format("woff");
@@ -731,7 +732,7 @@ select {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.9);
+  background: rgba(0, 0, 0, 0.7);
   pointer-events: all;
 }
 
@@ -746,6 +747,13 @@ select {
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   pointer-events: all;
   z-index: 10000;
+  opacity: 1;
+  transform: scale(1);
+  transition: all 0.2s ease-in-out;
+}
+.tutorial-tooltip.transitioning {
+  opacity: 0;
+  transform: scale(0.95);
 }
 
 .tutorial-header {
@@ -779,9 +787,34 @@ select {
 .tutorial-content {
   padding: 1rem 1.5rem;
   color: #ccc;
-  font-size: 1.4rem;
+  word-break: keep-all;
+  font-size: 1.5rem;
   line-height: 1.5;
-  white-space: pre-line;
+}
+.tutorial-content .tutorial-line {
+  position: relative;
+  padding-left: 2rem;
+  margin: 0.3rem 0;
+}
+.tutorial-content .tutorial-line:first-child {
+  margin-top: 0;
+}
+.tutorial-content .tutorial-line:last-child {
+  margin-bottom: 0;
+}
+.tutorial-content .tutorial-line:empty {
+  height: 1rem;
+}
+.tutorial-content .tutorial-line:empty::before {
+  display: none;
+}
+.tutorial-content .tutorial-line:not(:empty)::before {
+  content: "•";
+  position: absolute;
+  left: 0.5rem;
+  color: #ffbb00;
+  font-weight: bold;
+  font-size: 1.4rem;
 }
 
 .tutorial-footer {
@@ -800,4 +833,131 @@ select {
 .tutorial-controls {
   display: flex;
   gap: 0.8rem;
+}
+
+/* Confirmation Dialog */
+.confirmation-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10000;
+  animation: fadeIn 0.2s ease-in-out;
+}
+.confirmation-overlay.positioned {
+  align-items: flex-start;
+  justify-content: flex-start;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+.confirmation-dialog {
+  background: #1a1a1a;
+  border: 1px solid #333;
+  border-radius: 12px;
+  padding: 0;
+  max-width: 420px;
+  min-width: 320px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  animation: slideIn 0.3s ease-out;
+}
+.confirmation-dialog.tutorial-style {
+  border-radius: 16px;
+  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+}
+
+.confirmation-header {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.5rem 1.5rem 0;
+}
+
+.confirmation-icon {
+  font-size: 2.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 2rem;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(255, 187, 0, 0.1);
+  border: 1px solid rgba(255, 187, 0, 0.3);
+}
+
+.confirmation-close {
+  position: absolute;
+  top: 1.5rem;
+  right: 1.5rem;
+  background: none;
+  border: none;
+  color: #999;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.8rem;
+  line-height: 1;
+  transition: all 0.2s ease;
+}
+.confirmation-close:hover {
+  color: #fff;
+  background: #333;
+  transform: scale(1.1);
+}
+
+.confirmation-content {
+  padding: 1rem 1.5rem;
+  text-align: center;
+}
+
+.confirmation-title {
+  font-size: 1.8rem;
+  font-weight: 600;
+  color: #fff;
+  margin-bottom: 1rem;
+}
+
+.confirmation-message {
+  font-size: 1.5rem;
+  color: #ccc;
+  line-height: 1.5;
+  margin-bottom: 0;
+  white-space: pre-line;
+}
+
+.confirmation-footer {
+  padding: 0 1.5rem 1.5rem;
+}
+
+.confirmation-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
 }

@@ -750,7 +750,7 @@ select {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.7);
     pointer-events: all;
 }
 
@@ -808,9 +808,45 @@ select {
 .tutorial-content {
     padding: 1rem 1.5rem;
     color: #ccc;
-    font-size: 1.4rem;
+    word-break: keep-all;
+    font-size: 1.5rem;
     line-height: 1.5;
-    white-space: pre-line;
+
+    // 각 줄을 리스트 아이템으로 처리
+    .tutorial-line {
+        position: relative;
+        padding-left: 2rem;
+        margin: 0.3rem 0;
+
+        &:first-child {
+            margin-top: 0;
+        }
+
+        &:last-child {
+            margin-bottom: 0;
+        }
+
+        // 빈 줄인 경우 불릿 포인트 없이 공간만 유지
+        &:empty {
+            height: 1rem;
+
+            &::before {
+                display: none;
+            }
+        }
+
+        // 내용이 있는 줄에만 불릿 포인트 추가
+        &:not(:empty)::before {
+            content: "•";
+            position: absolute;
+            left: 0.5rem;
+            color: #ffbb00;
+            font-weight: bold;
+            font-size: 1.4rem;
+        }
+
+
+    }
 }
 
 .tutorial-footer {
@@ -838,42 +874,131 @@ select {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.7);
+    background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: center;
     justify-content: center;
     z-index: 10000;
+    animation: fadeIn 0.2s ease-in-out;
+
+    // 포지셔닝된 다이얼로그의 경우 중앙 정렬 비활성화
+    &.positioned {
+        align-items: flex-start;
+        justify-content: flex-start;
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.9) translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
 }
 
 .confirmation-dialog {
     background: #1a1a1a;
     border: 1px solid #333;
     border-radius: 12px;
-    padding: 2rem;
-    max-width: 400px;
-    width: 90%;
+    padding: 0;
+    max-width: 420px;
+    min-width: 320px;
+    // width: 90%;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    animation: slideIn 0.3s ease-out;
+
+    &.tutorial-style {
+        border-radius: 16px;
+        box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+    }
+}
+
+.confirmation-header {
+    display: flex;
+    justify-content: flex-end;
+    padding: 1.5rem 1.5rem 0;
+}
+
+.confirmation-icon {
+    font-size: 2.4rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 2rem;
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(255, 187, 0, 0.1);
+    border: 1px solid rgba(255, 187, 0, 0.3);
+}
+
+.confirmation-close {
+    position: absolute;
+    top: 1.5rem;
+    right: 1.5rem;
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    line-height: 1;
+    transition: all 0.2s ease;
+
+    &:hover {
+        color: #fff;
+        background: #333;
+        transform: scale(1.1);
+    }
+}
+
+.confirmation-content {
+    padding: 1rem 1.5rem;
     text-align: center;
 }
 
 .confirmation-title {
     font-size: 1.8rem;
     font-weight: 600;
+    color: #fff;
     margin-bottom: 1rem;
 }
 
 .confirmation-message {
-    font-size: 1.4rem;
+    font-size: 1.5rem;
     color: #ccc;
     line-height: 1.5;
-    margin-bottom: 2rem;
+    margin-bottom: 0;
     white-space: pre-line;
+}
+
+.confirmation-footer {
+    padding: 0 1.5rem 1.5rem;
 }
 
 .confirmation-actions {
     display: flex;
     justify-content: flex-end;
     gap: 1rem;
+    margin-top: 1.5rem;
 }
 
 

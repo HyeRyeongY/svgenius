@@ -107,6 +107,12 @@ const translations = {
         "toast.copyFailed": "Failed to copy",
         "toast.selectValidSvg": "Please select a valid SVG file.",
         "toast.normalizedPathExported": "Normalized path exported successfully",
+        "toast.startPointSet": "Start point has been set",
+
+        // Confirmation Dialog
+        "confirm.setStartPoint.title": "Set Start Point",
+        "confirm.setStartPoint.message":
+            "Setting anchor #{index} as the start point will add a new point to preserve the curve shape.\n\nDo you want to continue?",
 
         // Tooltips
         "tooltip.normalizeRequired": "At least 2 paths with content are required",
@@ -133,6 +139,8 @@ const translations = {
 
         // Common
         "common.delete": "Delete",
+        "common.continue": "Continue",
+        "common.cancel": "Cancel",
     },
     ko: {
         // Header
@@ -227,6 +235,12 @@ const translations = {
         "toast.copyFailed": "복사에 실패했습니다",
         "toast.selectValidSvg": "올바른 SVG 파일을 선택해주세요.",
         "toast.normalizedPathExported": "정규화된 패스를 성공적으로 내보냈습니다",
+        "toast.startPointSet": "시작점이 설정되었습니다",
+
+        // Confirmation Dialog
+        "confirm.setStartPoint.title": "시작점 설정",
+        "confirm.setStartPoint.message":
+            "{index}번 앵커 포인트를 시작점으로 설정하면\n 곡선 모양을 보존하기 위해\n 새로운 포인트가 추가됩니다.\n\n계속하시겠습니까?",
 
         // Tooltips
         "tooltip.normalizeRequired": "내용이 있는 패스가 최소 2개 필요합니다",
@@ -253,6 +267,8 @@ const translations = {
 
         // Common
         "common.delete": "삭제",
+        "common.continue": "계속",
+        "common.cancel": "취소",
     },
 };
 
